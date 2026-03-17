@@ -1913,7 +1913,9 @@
 
   // Handle initial hash on page load
   function handleHash() {
-    const screen = getScreenFromHash();
+    // Query param ?screen= takes priority (used for Figma capture to avoid hash conflict)
+    const qp = new URLSearchParams(window.location.search).get('screen');
+    const screen = (qp && screens[qp]) ? qp : getScreenFromHash();
     if (screen && screens[screen]) {
       showScreen(screen);
     } else {

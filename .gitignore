@@ -2,3 +2,5 @@ datasets-dashboard/
 __pycache__/
 *.pyc
 .claude/
+figma-prototype.zip
+figma-prototype/
