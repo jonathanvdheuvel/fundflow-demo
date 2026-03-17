@@ -157,5 +157,6 @@ Restart your computer after installing Node.js and try again.
 | `capture.html` | Used for Figma screenshots (you can ignore this) |
 | `datasets-dashboard/` | Confidential source data (do not open for routine prototype work) |
 | `.github/copilot-instructions.md` | Agent guardrails to prevent confidential dataset access |
+| `DUMMY_DATA_METHOD.md` | Concise explanation of how synthetic demo data was created and verified |
 | `serve.py` | Python local server entry point |
 | `CLAUDE.md`, `PROMPT.md`, etc. | Design documentation and planning notes |
