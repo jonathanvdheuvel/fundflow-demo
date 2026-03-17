@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FundFlow — Dashboard Prototype</title>
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    background: #F0F2F5;
+    min-height: 100vh;
+  }
+
+  /* ── SCREEN LABEL PILL ── */
+  .screen-label {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 9999;
+    background: rgba(28, 42, 74, 0.85);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ── SCREEN CONTAINERS ── */
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 1440px;
+    min-height: 100vh;
+    background: #F7F8FA;
+    margin: 0 auto;
+  }
+  .screen.active {
+    display: block;
+  }
+
+  /* ── SUCCESS TOAST ── */
+  .toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 10000;
+    background: #059669;
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(5, 150, 105, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(-20px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* ── TOP NAV ── */
+  .topnav {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    height: 60px;
+    gap: 0;
+  }
+  .brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1C2A4A;
+    letter-spacing: -0.3px;
+    margin-right: 48px;
+    cursor: pointer;
+  }
+  .brand span { color: #3B6FE8; }
+  .nav-links { display: flex; gap: 4px; flex: 1; }
+  .nav-link {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6B7280;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-link:hover { background: #F3F4F6; color: #374151; }
+  .nav-link.active {
+    background: #EEF3FD;
+    color: #3B6FE8;
+    font-weight: 600;
+  }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #3B6FE8;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-username { font-size: 14px; color: #374151; font-weight: 500; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    background: #FFFFFF;
+    padding: 24px 32px 20px;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .page-title { font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.3px; }
+  .page-sub { font-size: 13px; color: #9CA3AF; margin-top: 3px; }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn-outline {
+    background: #FFFFFF;
+    border: 1.5px solid #D1D5DB;
+    color: #374151;
+  }
+  .btn-outline:hover { border-color: #9CA3AF; }
+  .btn-primary {
+    background: #3B6FE8;
+    color: #FFFFFF;
+  }
+  .btn-primary:hover { background: #2F5BC9; }
+  .btn-icon { font-size: 15px; }
+  .btn-filters-active {
+    background: #3B6FE8;
+    color: #FFFFFF;
+    border: 1.5px solid #3B6FE8;
+  }
+
+  /* ── CONTENT AREA ── */
+  .content { padding: 28px 32px; }
+
+  /* ── KPI CARDS ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: #FFFFFF;
+    border-radius: 10px;
+    padding: 20px 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1px solid #E5E7EB;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.10); border-color: #D1D5DB; }
+  .kpi-card.clickable-error:hover { border-color: #DC2626; }
+  .kpi-label { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .kpi-value { font-size: 30px; font-weight: 700; color: #111827; letter-spacing: -0.5px; line-height: 1; }
+  .kpi-sub { font-size: 13px; color: #6B7280; margin-top: 8px; }
+  .kpi-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; margin-top: 8px;
+  }
+  .badge-green { background: #ECFDF5; color: #059669; }
+  .badge-amber { background: #FFFBEB; color: #D97706; }
+  .badge-red { background: #FEF2F2; color: #DC2626; }
+  .badge-blue { background: #EEF3FD; color: #3B6FE8; }
+
+  /* Progress bar */
+  .progress-bar { background: #F3F4F6; border-radius: 4px; height: 6px; margin-top: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; }
+  .fill-blue { background: #3B6FE8; }
+  .fill-amber { background: #F59E0B; }
+  .fill-red { background: #EF4444; }
+
+  /* ── CHART SECTION ── */
+  .chart-section {
+    background: #FFFFFF;
+    border-radius: 10px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1px solid #E5E7EB;
+    margin-bottom: 24px;
+  }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .section-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .legend { display: flex; gap: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6B7280; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-blue { background: #3B6FE8; }
+  .dot-amber { background: #F59E0B; }
+  .dot-red { background: #EF4444; }
+
+  /* SVG chart */
+  .chart-wrapper { width: 100%; }
+  .chart-labels { display: flex; justify-content: space-between; margin-top: 8px; padding: 0 8px; }
+  .chart-label { font-size: 11px; color: #9CA3AF; }
+
+  /* ── BOTTOM ROW ── */
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .panel {
+    background: #FFFFFF;
+    border-radius: 10px;
+    padding: 20px 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1px solid #E5E7EB;
+    overflow-x: auto;
+  }
+
+  @media (max-width: 1024px) {
+    .topnav {
+      height: auto;
+      min-height: 60px;
+      flex-wrap: wrap;
+      row-gap: 10px;
+      padding: 10px 16px;
+    }
+    .brand {
+      margin-right: 20px;
+    }
+    .nav-links {
+      order: 3;
+      width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding-bottom: 2px;
+    }
+    .page-header {
+      flex-direction: column;
+      gap: 12px;
+      padding: 18px 16px;
+    }
+    .content {
+      padding: 16px;
+    }
+    .kpi-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .bottom-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .kpi-row {
+      grid-template-columns: 1fr;
+    }
+    .screen-label {
+      display: none;
+    }
+    .header-actions {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+    .btn {
+      justify-content: center;
+    }
+    .data-table,
+    .error-table {
+      min-width: 900px;
+    }
+  }
+
+  /* Error list */
+  .error-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  .error-row:last-child { border-bottom: none; }
+  .error-meta { flex: 1; }
+  .error-title { font-size: 14px; font-weight: 500; color: #111827; }
+  .error-desc { font-size: 12px; color: #9CA3AF; margin-top: 2px; }
+  .severity-pill {
+    padding: 2px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .sev-high { background: #FEF2F2; color: #DC2626; }
+  .sev-med  { background: #FFFBEB; color: #D97706; }
+  .sev-low  { background: #F0FDF4; color: #16A34A; }
+
+  /* Trend list */
+  .trend-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  .trend-row:last-child { border-bottom: none; }
+  .trend-label { font-size: 14px; color: #374151; font-weight: 500; }
+  .trend-val { font-size: 14px; font-weight: 600; }
+
+  /* ── FILTER PANEL ── */
+  .filter-panel {
+    background: #FFFFFF;
+    border-radius: 10px;
+    border: 1.5px solid #3B6FE8;
+    box-shadow: 0 8px 32px rgba(59,111,232,0.12);
+    padding: 20px 22px;
+    margin-bottom: 24px;
+  }
+  .filter-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .filter-panel-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .filter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+  .filter-field label { font-size: 12px; font-weight: 600; color: #6B7280; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .filter-select {
+    width: 100%; padding: 8px 12px; border: 1.5px solid #D1D5DB;
+    border-radius: 7px; font-size: 14px; color: #111827;
+    background: #F9FAFB; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .filter-select.active { border-color: #3B6FE8; background-color: #EEF3FD; }
+  .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    background: #EEF3FD; color: #3B6FE8;
+    font-size: 12px; font-weight: 500;
+  }
+  .chip-x { cursor: pointer; font-size: 14px; color: #6B7280; }
+  .filter-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ── ERROR DETAIL SCREEN ── */
+  .breadcrumb { font-size: 13px; color: #9CA3AF; margin-bottom: 4px; }
+  .breadcrumb a { color: #3B6FE8; cursor: pointer; text-decoration: none; font-weight: 500; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .error-table { width: 100%; border-collapse: collapse; }
+  .error-table th {
+    text-align: left; padding: 10px 14px;
+    font-size: 12px; font-weight: 600; color: #6B7280;
+    background: #F9FAFB; border-bottom: 1px solid #E5E7EB;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .error-table td { padding: 12px 14px; border-bottom: 1px solid #F3F4F6; font-size: 14px; color: #374151; }
+  .error-table tr:last-child td { border-bottom: none; }
+  .error-table tr:hover td { background: #F9FAFB; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .status-open { background: #FEF2F2; color: #DC2626; }
+  .status-review { background: #FFFBEB; color: #D97706; }
+  .status-resolved { background: #ECFDF5; color: #059669; }
+  .action-link { color: #3B6FE8; font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; }
+  .action-link:hover { text-decoration: underline; }
+  .summary-bar {
+    display: flex; gap: 24px; padding: 14px 0; margin-bottom: 20px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .sum-item { text-align: center; }
+  .sum-val { font-size: 22px; font-weight: 700; }
+  .sum-label { font-size: 12px; color: #9CA3AF; margin-top: 2px; }
+  .val-red { color: #DC2626; }
+  .val-amber { color: #D97706; }
+  .val-green { color: #059669; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500; color: #3B6FE8;
+    cursor: pointer; text-decoration: none;
+    margin-bottom: 4px;
+  }
+  .back-link:hover { text-decoration: underline; }
+
+  /* ── EXPORT MODAL ── */
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(17,24,39,0.35);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .modal-backdrop.hidden { display: none; }
+  .modal {
+    background: #FFFFFF;
+    border-radius: 12px;
+    width: 480px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+    overflow: hidden;
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn {
+    from { transform: scale(0.95) translateY(10px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: #111827; }
+  .modal-close { color: #9CA3AF; font-size: 20px; cursor: pointer; padding: 4px; border-radius: 4px; }
+  .modal-close:hover { background: #F3F4F6; color: #374151; }
+  .modal-body { padding: 22px 24px; }
+  .modal-label { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; display: block; }
+  .format-options { display: flex; gap: 10px; margin-bottom: 20px; }
+  .format-card {
+    flex: 1; border: 1.5px solid #E5E7EB; border-radius: 8px;
+    padding: 14px 16px; cursor: pointer; text-align: center;
+    transition: all 0.15s;
+  }
+  .format-card:hover { border-color: #9CA3AF; }
+  .format-card.selected { border-color: #3B6FE8; background: #EEF3FD; }
+  .format-icon { font-size: 26px; margin-bottom: 6px; }
+  .format-name { font-size: 14px; font-weight: 600; color: #111827; }
+  .format-desc { font-size: 12px; color: #9CA3AF; margin-top: 2px; }
+  .scope-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .scope-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border: 1.5px solid #E5E7EB;
+    border-radius: 8px; cursor: pointer; font-size: 14px; color: #374151;
+    transition: all 0.15s;
+  }
+  .scope-option:hover { border-color: #9CA3AF; }
+  .scope-option.selected { border-color: #3B6FE8; background: #EEF3FD; color: #1C2A4A; }
+  .scope-option input[type=radio] { accent-color: #3B6FE8; }
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #E5E7EB;
+    display: flex; justify-content: flex-end; gap: 10px;
+  }
+  .info-row { font-size: 13px; color: #6B7280; margin-bottom: 4px; }
+  .info-row strong { color: #374151; }
+
+  /* ── CONTRACTS & REPORTS TABLES ── */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    text-align: left; padding: 10px 14px;
+    font-size: 12px; font-weight: 600; color: #6B7280;
+    background: #F9FAFB; border-bottom: 1px solid #E5E7EB;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid #F3F4F6; font-size: 14px; color: #374151; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #F9FAFB; cursor: pointer; }
+  .data-table .total-row td { background: #F9FAFB; font-weight: 700; border-top: 2px solid #E5E7EB; }
+  .data-table .total-row:hover td { background: #F3F4F6; }
+  .cell-progress { display: flex; align-items: center; gap: 8px; }
+  .cell-progress .progress-bar { width: 80px; height: 6px; flex-shrink: 0; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .status-active { background: #ECFDF5; color: #059669; }
+  .status-expiring { background: #FFFBEB; color: #D97706; }
+  .status-suspended { background: #FEF2F2; color: #DC2626; }
+  .status-approved { background: #ECFDF5; color: #059669; }
+  .status-partial { background: #FFFBEB; color: #D97706; }
+  .status-pending { background: #EEF3FD; color: #3B6FE8; }
+  .status-rejected { background: #FEF2F2; color: #DC2626; }
+  .filter-bar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .filter-bar .filter-select { width: auto; min-width: 160px; }
+  .amount-positive { color: #059669; }
+  .amount-negative { color: #DC2626; }
+</style>
+</head>
+<body>
+
+<!-- Screen Label Pill -->
+<div class="screen-label" id="screenLabel">Screen 1 — Overview</div>
+
+<!-- Success Toast -->
+<div class="toast" id="successToast">
+  <span style="font-size:18px">&#10003;</span> Report generated successfully — downloading now
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN 1 — OVERVIEW                                           -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-overview">
+
+  <!-- Top Nav -->
+  <nav class="topnav">
+    <div class="brand" onclick="navigateTo('overview')">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link active" data-nav="overview" onclick="navigateTo('overview')">Overview</a>
+      <a class="nav-link" data-nav="contracts" onclick="navigateTo('contracts')">Contracts</a>
+      <a class="nav-link" data-nav="validation" onclick="navigateTo('errors')">Validation</a>
+      <a class="nav-link" data-nav="reports" onclick="navigateTo('reports')">Reports</a>
+    </div>
+    <div class="nav-right">
+      <div class="avatar">MV</div>
+      <span class="nav-username">Mila van den Heuvel</span>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Overview</div>
+      <div class="page-sub">Last updated: Today at 09:41 — Fiscal year 2024-2025</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" id="filterBtn" onclick="navigateTo('filter')"><span class="btn-icon">&#9881;</span> Filters</button>
+      <button class="btn btn-primary" onclick="navigateTo('export')"><span class="btn-icon">&#8595;</span> Export Report</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+
+      <div class="kpi-card">
+        <div class="kpi-label">Budget Used</div>
+        <div class="kpi-value" id="overviewBudgetUsedValue">78.4%</div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" id="overviewBudgetUsedProgress" style="width:78.4%"></div></div>
+        <div class="kpi-sub" id="overviewBudgetUsedSub">&#8364; 3,920,000 of &#8364; 5,000,000</div>
+        <span class="kpi-badge badge-amber">&#8593; +4.2% vs last month</span>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Days Until Predicted Breach</div>
+        <div class="kpi-value" style="color:#D97706" id="overviewDaysToBreachValue">34</div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" style="width:45%"></div></div>
+        <div class="kpi-sub" id="overviewDaysToBreachSub">Predicted breach: 19 Apr 2025</div>
+        <span class="kpi-badge badge-amber">&#9888; Caution — monitor closely</span>
+      </div>
+
+      <div class="kpi-card clickable-error" onclick="navigateTo('errors')">
+        <div class="kpi-label">Data Errors</div>
+        <div class="kpi-value" style="color:#DC2626" id="overviewDataErrorsValue">12</div>
+        <div class="kpi-sub" id="overviewDataErrorsSub">8 open &middot; 4 under review</div>
+        <span class="kpi-badge badge-red">&#9679; Action required</span>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Spending Trend</div>
+        <div class="kpi-value" style="color:#059669" id="overviewSpendingTrendValue">+3.1%</div>
+        <div class="kpi-sub" id="overviewSpendingTrendSub">Month-over-month increase</div>
+        <span class="kpi-badge badge-blue">&#8593; Within forecast range</span>
+      </div>
+
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-section">
+      <div class="section-header">
+        <div class="section-title">Spending vs Budget Ceiling — Monthly</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot dot-blue"></div> Actual</div>
+          <div class="legend-item"><div class="legend-dot dot-amber"></div> Forecast</div>
+          <div class="legend-item"><div class="legend-dot dot-red" style="width:24px;height:2px;border-radius:0"></div> Ceiling</div>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <svg width="100%" height="200" viewBox="0 0 1240 200" xmlns="http://www.w3.org/2000/svg">
+          <line x1="0" y1="180" x2="1240" y2="180" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="140" x2="1240" y2="140" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="100" x2="1240" y2="100" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="60" x2="1240" y2="60" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="20" x2="1240" y2="20" stroke="#F3F4F6" stroke-width="1"/>
+          <text x="0" y="183" font-size="11" fill="#9CA3AF">0</text>
+          <text x="0" y="143" font-size="11" fill="#9CA3AF">&#8364;1M</text>
+          <text x="0" y="103" font-size="11" fill="#9CA3AF">&#8364;2M</text>
+          <text x="0" y="63" font-size="11" fill="#9CA3AF">&#8364;3M</text>
+          <text x="0" y="23" font-size="11" fill="#9CA3AF">&#8364;5M</text>
+          <line x1="20" y1="20" x2="1220" y2="20" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="6 3"/>
+          <text x="1160" y="16" font-size="11" fill="#EF4444" font-weight="600">Ceiling</text>
+          <defs>
+            <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3B6FE8" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#3B6FE8" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <path d="M20,160 L134,152 L248,145 L362,140 L476,133 L590,125 L704,117 L818,109 L818,180 L704,180 L590,180 L476,180 L362,180 L248,180 L134,180 L20,180 Z" fill="url(#blueGrad)"/>
+          <polyline points="20,160 134,152 248,145 362,140 476,133 590,125 704,117 818,109" fill="none" stroke="#3B6FE8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <polyline points="818,109 932,98 1046,85 1160,70 1220,60" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5 3" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="20" cy="160" r="4" fill="#3B6FE8"/>
+          <circle cx="134" cy="152" r="4" fill="#3B6FE8"/>
+          <circle cx="248" cy="145" r="4" fill="#3B6FE8"/>
+          <circle cx="362" cy="140" r="4" fill="#3B6FE8"/>
+          <circle cx="476" cy="133" r="4" fill="#3B6FE8"/>
+          <circle cx="590" cy="125" r="4" fill="#3B6FE8"/>
+          <circle cx="704" cy="117" r="4" fill="#3B6FE8"/>
+          <circle cx="818" cy="109" r="5" fill="#3B6FE8" stroke="#fff" stroke-width="2"/>
+          <line x1="818" y1="20" x2="818" y2="180" stroke="#3B6FE8" stroke-width="1" stroke-dasharray="3 2" opacity="0.4"/>
+          <text x="822" y="35" font-size="11" fill="#3B6FE8">Now</text>
+        </svg>
+        <div class="chart-labels">
+          <span class="chart-label">Jul</span>
+          <span class="chart-label">Aug</span>
+          <span class="chart-label">Sep</span>
+          <span class="chart-label">Oct</span>
+          <span class="chart-label">Nov</span>
+          <span class="chart-label">Dec</span>
+          <span class="chart-label">Jan</span>
+          <span class="chart-label">Feb</span>
+          <span class="chart-label">Mar</span>
+          <span class="chart-label">Apr</span>
+          <span class="chart-label">May</span>
+          <span class="chart-label">Jun</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="bottom-row">
+
+      <!-- Recent Errors -->
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">Recent Data Errors</div>
+          <a class="action-link" onclick="navigateTo('errors')">View all &#8594;</a>
+        </div>
+        <div class="error-row">
+          <div class="error-meta">
+            <div class="error-title">Missing insurer field</div>
+            <div class="error-desc">Contract #CR-4421 &middot; Municipality Noord</div>
+          </div>
+          <span class="severity-pill sev-high">High</span>
+        </div>
+        <div class="error-row">
+          <div class="error-meta">
+            <div class="error-title">Ceiling mismatch</div>
+            <div class="error-desc">Contract #CR-4389 &middot; Insurer Zilveren Zorg</div>
+          </div>
+          <span class="severity-pill sev-high">High</span>
+        </div>
+        <div class="error-row">
+          <div class="error-meta">
+            <div class="error-title">Duplicate record</div>
+            <div class="error-desc">Contract #CR-4401 &middot; Municipality West</div>
+          </div>
+          <span class="severity-pill sev-med">Medium</span>
+        </div>
+        <div class="error-row">
+          <div class="error-meta">
+            <div class="error-title">Invalid category code</div>
+            <div class="error-desc">Contract #CR-4355 &middot; Insurer CZ Groep</div>
+          </div>
+          <span class="severity-pill sev-med">Medium</span>
+        </div>
+      </div>
+
+      <!-- Spending by Category -->
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">Top Spending Categories</div>
+          <a class="action-link">Details &#8594;</a>
+        </div>
+        <div class="trend-row">
+          <span class="trend-label">Residential Care</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-blue" style="width:72%"></div></div>
+            <span class="trend-val">&#8364; 1,418,000</span>
+          </div>
+        </div>
+        <div class="trend-row">
+          <span class="trend-label">Day Support</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-blue" style="width:54%"></div></div>
+            <span class="trend-val">&#8364; 1,063,000</span>
+          </div>
+        </div>
+        <div class="trend-row">
+          <span class="trend-label">Home Assistance</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-blue" style="width:38%"></div></div>
+            <span class="trend-val">&#8364; 748,000</span>
+          </div>
+        </div>
+        <div class="trend-row">
+          <span class="trend-label">Mental Health</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-amber" style="width:34%"></div></div>
+            <span class="trend-val">&#8364; 671,000</span>
+          </div>
+        </div>
+        <div class="trend-row">
+          <span class="trend-label">Youth Services</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-blue" style="width:10%"></div></div>
+            <span class="trend-val">&#8364; 200,000</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN 2 — FILTER OPEN                                        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-filter">
+
+  <nav class="topnav">
+    <div class="brand" onclick="navigateTo('overview')">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link active" data-nav="overview" onclick="navigateTo('overview')">Overview</a>
+      <a class="nav-link" data-nav="contracts" onclick="navigateTo('contracts')">Contracts</a>
+      <a class="nav-link" data-nav="validation" onclick="navigateTo('errors')">Validation</a>
+      <a class="nav-link" data-nav="reports" onclick="navigateTo('reports')">Reports</a>
+    </div>
+    <div class="nav-right">
+      <div class="avatar">MV</div>
+      <span class="nav-username">Mila van den Heuvel</span>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Overview</div>
+      <div class="page-sub">Last updated: Today at 09:41 — Fiscal year 2024-2025</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-filters-active"><span class="btn-icon">&#9881;</span> Filters Active</button>
+      <button class="btn btn-primary" onclick="navigateTo('export')"><span class="btn-icon">&#8595;</span> Export Report</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+      <div class="filter-panel-header">
+        <div class="filter-panel-title">&#128269; Filter Dashboard</div>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:13px" onclick="navigateTo('overview')">&#10005; Close</button>
+      </div>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label>Insurer</label>
+          <select class="filter-select active">
+            <option>Zilveren Zorg</option>
+            <option>CZ Groep</option>
+            <option>VGZ</option>
+            <option>All insurers</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Municipality</label>
+          <select class="filter-select active">
+            <option>Noord</option>
+            <option>West</option>
+            <option>Zuid</option>
+            <option>All municipalities</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Contract</label>
+          <select class="filter-select">
+            <option>All contracts</option>
+            <option>Residential Care</option>
+            <option>Day Support</option>
+            <option>Home Assistance</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>Date range</label>
+          <select class="filter-select active">
+            <option>Q1 2025 (Jan-Mar)</option>
+            <option>Q2 2025 (Apr-Jun)</option>
+            <option>Full year 2024-2025</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-chips">
+        <span class="chip">Insurer: Zilveren Zorg <span class="chip-x">&#215;</span></span>
+        <span class="chip">Municipality: Noord <span class="chip-x">&#215;</span></span>
+        <span class="chip">Period: Q1 2025 <span class="chip-x">&#215;</span></span>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-outline" onclick="navigateTo('overview')">Reset All</button>
+        <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+      </div>
+    </div>
+
+    <!-- KPI Cards (filtered state) -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Budget Used</div>
+        <div class="kpi-value">64.2%</div>
+        <div class="progress-bar"><div class="progress-fill fill-blue" style="width:64.2%"></div></div>
+        <div class="kpi-sub">&#8364; 963,000 of &#8364; 1,500,000</div>
+        <span class="kpi-badge badge-blue">Filtered: Zilveren Zorg &middot; Noord</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Days Until Predicted Breach</div>
+        <div class="kpi-value" style="color:#059669">87</div>
+        <div class="progress-bar"><div class="progress-fill fill-blue" style="width:70%"></div></div>
+        <div class="kpi-sub">Predicted breach: 12 Jun 2025</div>
+        <span class="kpi-badge badge-green">&#10003; Within safe range</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Data Errors</div>
+        <div class="kpi-value" style="color:#D97706">4</div>
+        <div class="kpi-sub">3 open &middot; 1 under review</div>
+        <span class="kpi-badge badge-amber">&#9888; Review needed</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Spending Trend</div>
+        <div class="kpi-value" style="color:#059669">+1.8%</div>
+        <div class="kpi-sub">Month-over-month increase</div>
+        <span class="kpi-badge badge-blue">&#8593; Within forecast range</span>
+      </div>
+    </div>
+
+    <!-- Chart (filtered) -->
+    <div class="chart-section">
+      <div class="section-header">
+        <div class="section-title">Spending vs Budget Ceiling — Q1 2025 &middot; Zilveren Zorg &middot; Noord</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot dot-blue"></div> Actual</div>
+          <div class="legend-item"><div class="legend-dot dot-amber"></div> Forecast</div>
+          <div class="legend-item"><div class="legend-dot" style="width:24px;height:2px;border-radius:0;background:#EF4444"></div> Ceiling</div>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <svg width="100%" height="140" viewBox="0 0 1240 140" xmlns="http://www.w3.org/2000/svg">
+          <line x1="0" y1="120" x2="1240" y2="120" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="80" x2="1240" y2="80" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="40" x2="1240" y2="40" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="15" x2="1240" y2="15" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="6 3"/>
+          <text x="1160" y="12" font-size="11" fill="#EF4444" font-weight="600">Ceiling</text>
+          <defs>
+            <linearGradient id="blueGrad2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3B6FE8" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#3B6FE8" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <path d="M20,115 L400,100 L800,85 L800,120 L400,120 L20,120 Z" fill="url(#blueGrad2)" opacity="0.5"/>
+          <polyline points="20,115 400,100 800,85" fill="none" stroke="#3B6FE8" stroke-width="2.5" stroke-linejoin="round"/>
+          <polyline points="800,85 1000,72 1200,62" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5 3"/>
+          <circle cx="20" cy="115" r="4" fill="#3B6FE8"/>
+          <circle cx="400" cy="100" r="4" fill="#3B6FE8"/>
+          <circle cx="800" cy="85" r="5" fill="#3B6FE8" stroke="#fff" stroke-width="2"/>
+        </svg>
+        <div class="chart-labels">
+          <span class="chart-label">Jan</span>
+          <span class="chart-label">Feb</span>
+          <span class="chart-label" style="color:#3B6FE8;font-weight:600">Mar (now)</span>
+          <span class="chart-label">Apr</span>
+          <span class="chart-label">May</span>
+          <span class="chart-label">Jun</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN 3 — ERROR DETAILS                                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-errors">
+
+  <nav class="topnav">
+    <div class="brand" onclick="navigateTo('overview')">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link" data-nav="overview" onclick="navigateTo('overview')">Overview</a>
+      <a class="nav-link" data-nav="contracts" onclick="navigateTo('contracts')">Contracts</a>
+      <a class="nav-link active" data-nav="validation" onclick="navigateTo('errors')">Validation</a>
+      <a class="nav-link" data-nav="reports" onclick="navigateTo('reports')">Reports</a>
+    </div>
+    <div class="nav-right">
+      <div class="avatar">MV</div>
+      <span class="nav-username">Mila van den Heuvel</span>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <a class="back-link" onclick="navigateTo('overview')">&#8592; Overview</a>
+      <div class="breadcrumb"><a onclick="navigateTo('overview')">Overview</a> / Data Errors</div>
+      <div class="page-title">Data Validation Issues</div>
+      <div class="page-sub" id="errorPageSub">12 issues found — Fiscal year 2024-2025 &middot; All insurers &middot; All municipalities</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline"><span class="btn-icon">&#9881;</span> Filter Issues</button>
+      <button class="btn btn-primary">&#8595; Export Issue Log</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Summary bar -->
+    <div class="summary-bar">
+      <div class="sum-item">
+        <div class="sum-val val-red" id="errorSummaryOpen">8</div>
+        <div class="sum-label">Open</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-val val-amber" id="errorSummaryReview">4</div>
+        <div class="sum-label">Under Review</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-val val-green">6</div>
+        <div class="sum-label">Resolved (30d)</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-val" style="color:#374151" id="errorSummaryTotal">12</div>
+        <div class="sum-label">Total Active</div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <select class="filter-select" id="errorFilterSeverity" onchange="applyErrorFilters()">
+        <option value="">All Severities</option>
+        <option>High</option>
+        <option>Medium</option>
+        <option>Low</option>
+      </select>
+      <select class="filter-select" id="errorFilterStatus" onchange="applyErrorFilters()">
+        <option value="">All Statuses</option>
+        <option>Open</option>
+        <option>Review</option>
+      </select>
+      <select class="filter-select" id="errorFilterType" onchange="applyErrorFilters()">
+        <option value="">All Issue Types</option>
+        <option>Missing field</option>
+        <option>Ceiling mismatch</option>
+        <option>Duplicate record</option>
+        <option>Invalid category</option>
+      </select>
+      <button class="btn btn-outline" onclick="resetErrorFilters()" style="padding:7px 14px;font-size:13px">Reset</button>
+    </div>
+
+    <!-- Error Table -->
+    <div class="panel" style="padding:0">
+      <table class="error-table">
+        <thead>
+          <tr>
+            <th>Issue Type</th>
+            <th>Contract</th>
+            <th>Insurer</th>
+            <th>Municipality</th>
+            <th>Severity</th>
+            <th>Status</th>
+            <th>Detected</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="errorTableBody">
+          <tr data-severity="High" data-status="Open" data-type="Missing field">
+            <td><strong>Missing field</strong><br><span style="font-size:12px;color:#9CA3AF">Insurer ID not set</span></td>
+            <td>CR-4421</td><td>—</td><td>Noord</td>
+            <td><span class="severity-pill sev-high">High</span></td>
+            <td><span class="status-badge status-open">&#9679; Open</span></td>
+            <td>15 Mar</td><td><a class="action-link">Review &#8594;</a></td>
+          </tr>
+          <tr data-severity="High" data-status="Open" data-type="Ceiling mismatch">
+            <td><strong>Ceiling mismatch</strong><br><span style="font-size:12px;color:#9CA3AF">Contract ceiling differs from system</span></td>
+            <td>CR-4389</td><td>Zilveren Zorg</td><td>West</td>
+            <td><span class="severity-pill sev-high">High</span></td>
+            <td><span class="status-badge status-open">&#9679; Open</span></td>
+            <td>14 Mar</td><td><a class="action-link">Review &#8594;</a></td>
+          </tr>
+          <tr data-severity="Medium" data-status="Review" data-type="Duplicate record">
+            <td><strong>Duplicate record</strong><br><span style="font-size:12px;color:#9CA3AF">Duplicate claim detected</span></td>
+            <td>CR-4401</td><td>CZ Groep</td><td>West</td>
+            <td><span class="severity-pill sev-med">Medium</span></td>
+            <td><span class="status-badge status-review">&#9684; Review</span></td>
+            <td>13 Mar</td><td><a class="action-link">Review &#8594;</a></td>
+          </tr>
+          <tr data-severity="Medium" data-status="Open" data-type="Invalid category">
+            <td><strong>Invalid category</strong><br><span style="font-size:12px;color:#9CA3AF">Unknown care category code</span></td>
+            <td>CR-4355</td><td>CZ Groep</td><td>Zuid</td>
+            <td><span class="severity-pill sev-med">Medium</span></td>
+            <td><span class="status-badge status-open">&#9679; Open</span></td>
+            <td>12 Mar</td><td><a class="action-link">Review &#8594;</a></td>
+          </tr>
+          <tr data-severity="High" data-status="Open" data-type="Missing field">
+            <td><strong>Missing field</strong><br><span style="font-size:12px;color:#9CA3AF">Municipality code blank</span></td>
+            <td>CR-4290</td><td>VGZ</td><td>—</td>
+            <td><span class="severity-pill sev-high">High</span></td>
+            <td><span class="status-badge status-open">&#9679; Open</span></td>
+            <td>11 Mar</td><td><a class="action-link">Review &#8594;</a></td>
+          </tr>
+          <tr data-severity="High" data-status="Review" data-type="Ceiling mismatch">
+            <td><strong>Ceiling mismatch</strong><br><span style="font-size:12px;color:#9CA3AF">Budget ceiling below actual spend</span></td>
+            <td>CR-4271</td><td>Zilveren Zorg</td><td>Noord</td>
+            <td><span class="severity-pill sev-high">High</span></td>
+            <td><span class="status-badge status-review">&#9684; Review</span></td>
+            <td>10 Mar</td><td><a class="action-link">Review &#8594;</a></td>
+          </tr>
+          <tr data-severity="Low" data-status="Review" data-type="Duplicate record">
+            <td><strong>Duplicate record</strong><br><span style="font-size:12px;color:#9CA3AF">Same provider billed twice</span></td>
+            <td>CR-4244</td><td>VGZ</td><td>Noord</td>
+            <td><span class="severity-pill sev-low">Low</span></td>
+            <td><span class="status-badge status-review">&#9684; Review</span></td>
+            <td>9 Mar</td><td><a class="action-link">Review &#8594;</a></td>
+          </tr>
+          <tr data-severity="Low" data-status="Open" data-type="Invalid category">
+            <td><strong>Invalid category</strong><br><span style="font-size:12px;color:#9CA3AF">Category not in master list</span></td>
+            <td>CR-4211</td><td>CZ Groep</td><td>Zuid</td>
+            <td><span class="severity-pill sev-low">Low</span></td>
+            <td><span class="status-badge status-open">&#9679; Open</span></td>
+            <td>8 Mar</td><td><a class="action-link">Review &#8594;</a></td>
+          </tr>
+          <tr id="errorNoResults" style="display:none">
+            <td colspan="8" style="text-align:center;padding:24px;color:#9CA3AF;font-size:14px">No issues match the selected filters.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN 4 — EXPORT MODAL                                       -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-export">
+
+  <nav class="topnav">
+    <div class="brand" onclick="navigateTo('overview')">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link active" data-nav="overview" onclick="navigateTo('overview')">Overview</a>
+      <a class="nav-link" data-nav="contracts" onclick="navigateTo('contracts')">Contracts</a>
+      <a class="nav-link" data-nav="validation" onclick="navigateTo('errors')">Validation</a>
+      <a class="nav-link" data-nav="reports" onclick="navigateTo('reports')">Reports</a>
+    </div>
+    <div class="nav-right">
+      <div class="avatar">MV</div>
+      <span class="nav-username">Mila van den Heuvel</span>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Overview</div>
+      <div class="page-sub">Last updated: Today at 09:41 — Fiscal year 2024-2025</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" onclick="navigateTo('filter')"><span class="btn-icon">&#9881;</span> Filters</button>
+      <button class="btn btn-primary" style="background:#1C2A4A"><span class="btn-icon">&#8595;</span> Export Report</button>
+    </div>
+  </div>
+
+  <!-- Dimmed KPI cards behind modal -->
+  <div class="content" style="opacity:0.15;pointer-events:none">
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Budget Used</div><div class="kpi-value">78.4%</div></div>
+      <div class="kpi-card"><div class="kpi-label">Days Until Breach</div><div class="kpi-value" style="color:#D97706">34</div></div>
+      <div class="kpi-card"><div class="kpi-label">Data Errors</div><div class="kpi-value" style="color:#DC2626">12</div></div>
+      <div class="kpi-card"><div class="kpi-label">Spending Trend</div><div class="kpi-value" style="color:#059669">+3.1%</div></div>
+    </div>
+  </div>
+
+  <!-- Modal Backdrop -->
+  <div class="modal-backdrop" style="position:absolute;top:120px;left:0;right:0;bottom:0;min-height:600px">
+
+    <!-- Export Modal -->
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Export Report</div>
+        <span class="modal-close" onclick="navigateTo('overview')">&#10005;</span>
+      </div>
+      <div class="modal-body">
+
+        <!-- Format -->
+        <span class="modal-label">Export Format</span>
+        <div class="format-options">
+          <div class="format-card selected" onclick="selectFormat(this)">
+            <div class="format-icon">&#128196;</div>
+            <div class="format-name">PDF</div>
+            <div class="format-desc">Formatted report</div>
+          </div>
+          <div class="format-card" onclick="selectFormat(this)">
+            <div class="format-icon">&#128202;</div>
+            <div class="format-name">Excel (.xlsx)</div>
+            <div class="format-desc">Raw data table</div>
+          </div>
+          <div class="format-card" onclick="selectFormat(this)">
+            <div class="format-icon">&#128203;</div>
+            <div class="format-name">CSV</div>
+            <div class="format-desc">Plain data export</div>
+          </div>
+        </div>
+
+        <!-- Scope -->
+        <span class="modal-label">Report Scope</span>
+        <div class="scope-options">
+          <label class="scope-option selected" onclick="selectScope(this)">
+            <input type="radio" name="scope" checked>
+            <div>
+              <div style="font-weight:600">Full dashboard — Fiscal year 2024-2025</div>
+              <div style="font-size:12px;color:#9CA3AF">All insurers &middot; All municipalities &middot; All contracts</div>
+            </div>
+          </label>
+          <label class="scope-option" onclick="selectScope(this)">
+            <input type="radio" name="scope">
+            <div>
+              <div style="font-weight:600">Current filtered view</div>
+              <div style="font-size:12px;color:#9CA3AF">No active filters — same as full report</div>
+            </div>
+          </label>
+          <label class="scope-option" onclick="selectScope(this)">
+            <input type="radio" name="scope">
+            <div>
+              <div style="font-weight:600">Error log only</div>
+              <div style="font-size:12px;color:#9CA3AF">12 active validation issues</div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Info -->
+        <div style="background:#F9FAFB;border-radius:7px;padding:12px 14px;border:1px solid #E5E7EB">
+          <div class="info-row"><strong>Period:</strong> Jul 2024 — Mar 2025</div>
+          <div class="info-row"><strong>Format:</strong> PDF</div>
+          <div class="info-row"><strong>Includes:</strong> Budget overview, spending chart, error summary</div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="navigateTo('overview')">Cancel</button>
+        <button class="btn btn-primary" onclick="generateReport()">&#8595; Generate &amp; Download</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN 5 — CONTRACTS                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-contracts">
+
+  <nav class="topnav">
+    <div class="brand" onclick="navigateTo('overview')">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link" data-nav="overview" onclick="navigateTo('overview')">Overview</a>
+      <a class="nav-link active" data-nav="contracts" onclick="navigateTo('contracts')">Contracts</a>
+      <a class="nav-link" data-nav="validation" onclick="navigateTo('errors')">Validation</a>
+      <a class="nav-link" data-nav="reports" onclick="navigateTo('reports')">Reports</a>
+    </div>
+    <div class="nav-right">
+      <div class="avatar">MV</div>
+      <span class="nav-username">Mila van den Heuvel</span>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Contracts</div>
+      <div class="page-sub">Youth care contracts 2025&#8211;2026</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline"><span class="btn-icon">&#9881;</span> Filter</button>
+      <button class="btn btn-primary"><span class="btn-icon">&#43;</span> New Contract</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- KPI Summary -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Contracts</div>
+        <div class="kpi-value" id="contractsTotalValue">12</div>
+        <div class="kpi-sub" id="contractsTotalSub">Across 6 insurers</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Active</div>
+        <div class="kpi-value" style="color:#059669" id="contractsActiveValue">9</div>
+        <div class="kpi-sub" id="contractsActiveSub">Currently running</div>
+        <span class="kpi-badge badge-green">&#10003; On track</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Expiring Soon</div>
+        <div class="kpi-value" style="color:#D97706" id="contractsExpiringValue">2</div>
+        <div class="kpi-sub">Within 90 days</div>
+        <span class="kpi-badge badge-amber">&#9888; Review needed</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total Ceiling</div>
+        <div class="kpi-value" id="contractsCeilingValue">&#8364; 707,408</div>
+        <div class="kpi-sub">Combined contract value</div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <select class="filter-select" id="contractFilterInsurer" onchange="applyContractFilters()">
+        <option value="">All Insurers</option>
+        <option>ASR</option>
+        <option>Menzis</option>
+        <option>VGZ</option>
+        <option>CZ</option>
+        <option>Zilveren Kruis</option>
+        <option>ONVZ</option>
+      </select>
+      <select class="filter-select" id="contractFilterRegion" onchange="applyContractFilters()">
+        <option value="">All Regions</option>
+        <option>Aalsmeer/Amstelveen</option>
+        <option>Amsterdam/Weesp</option>
+        <option>DUO</option>
+        <option>West-Friesland</option>
+      </select>
+      <select class="filter-select" id="contractFilterStatus" onchange="applyContractFilters()">
+        <option value="">All Statuses</option>
+        <option>Active</option>
+        <option>Expiring Soon</option>
+        <option>Suspended</option>
+      </select>
+      <button class="btn btn-outline" onclick="resetContractFilters()" style="padding:7px 14px;font-size:13px">Reset</button>
+    </div>
+
+    <!-- Contracts Table -->
+    <div class="panel" style="padding:0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Contract ID</th>
+            <th>Insurer</th>
+            <th>Region</th>
+            <th>Municipality</th>
+            <th>Product Category</th>
+            <th>Ceiling</th>
+            <th>Used</th>
+            <th>% Used</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="contractTableBody">
+          <tr data-insurer="ASR" data-region="Aalsmeer/Amstelveen" data-status="Active">
+            <td><strong>JC-2025-001</strong></td><td>ASR</td><td>Aalsmeer/Amstelveen</td><td>Aalsmeer</td><td>Residential Care</td>
+            <td>&#8364; 150,000</td><td>&#8364; 112,500</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-amber" style="width:75%"></div></div> 75%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr data-insurer="Menzis" data-region="Amsterdam/Weesp" data-status="Active">
+            <td><strong>JC-2025-002</strong></td><td>Menzis</td><td>Amsterdam/Weesp</td><td>Amsterdam</td><td>Day Support</td>
+            <td>&#8364; 27,158</td><td>&#8364; 19,011</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-blue" style="width:70%"></div></div> 70%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr data-insurer="VGZ" data-region="DUO" data-status="Expiring Soon">
+            <td><strong>JC-2025-003</strong></td><td>VGZ</td><td>DUO</td><td>Diemen</td><td>Mental Health</td>
+            <td>&#8364; 95,000</td><td>&#8364; 88,350</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-red" style="width:93%"></div></div> 93%</div></td>
+            <td><span class="status-pill status-expiring">&#9888; Expiring Soon</span></td>
+          </tr>
+          <tr data-insurer="CZ" data-region="Aalsmeer/Amstelveen" data-status="Active">
+            <td><strong>JC-2025-004</strong></td><td>CZ</td><td>Aalsmeer/Amstelveen</td><td>Amstelveen</td><td>Residential Care</td>
+            <td>&#8364; 212,000</td><td>&#8364; 148,400</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-blue" style="width:70%"></div></div> 70%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr data-insurer="Zilveren Kruis" data-region="Amsterdam/Weesp" data-status="Active">
+            <td><strong>JC-2025-005</strong></td><td>Zilveren Kruis</td><td>Amsterdam/Weesp</td><td>Amsterdam</td><td>Home Assistance</td>
+            <td>&#8364; 188,500</td><td>&#8364; 122,725</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-blue" style="width:65%"></div></div> 65%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr data-insurer="ONVZ" data-region="West-Friesland" data-status="Active">
+            <td><strong>JC-2025-006</strong></td><td>ONVZ</td><td>West-Friesland</td><td>Medemblik</td><td>Youth Services</td>
+            <td>&#8364; 34,750</td><td>&#8364; 24,325</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-blue" style="width:70%"></div></div> 70%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr data-insurer="CZ" data-region="DUO" data-status="Active">
+            <td><strong>JC-2025-007</strong></td><td>CZ</td><td>DUO</td><td>Ouder-Amstel</td><td>Day Support</td>
+            <td>&#8364; 68,000</td><td>&#8364; 51,000</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-amber" style="width:75%"></div></div> 75%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr data-insurer="ASR" data-region="Amsterdam/Weesp" data-status="Expiring Soon">
+            <td><strong>JC-2025-008</strong></td><td>ASR</td><td>Amsterdam/Weesp</td><td>Amsterdam</td><td>Mental Health</td>
+            <td>&#8364; 45,000</td><td>&#8364; 41,850</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-red" style="width:93%"></div></div> 93%</div></td>
+            <td><span class="status-pill status-expiring">&#9888; Expiring Soon</span></td>
+          </tr>
+          <tr data-insurer="Zilveren Kruis" data-region="Aalsmeer/Amstelveen" data-status="Active">
+            <td><strong>JC-2025-009</strong></td><td>Zilveren Kruis</td><td>Aalsmeer/Amstelveen</td><td>Aalsmeer</td><td>Home Assistance</td>
+            <td>&#8364; 72,000</td><td>&#8364; 43,200</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-blue" style="width:60%"></div></div> 60%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr data-insurer="Menzis" data-region="West-Friesland" data-status="Suspended">
+            <td><strong>JC-2025-010</strong></td><td>Menzis</td><td>West-Friesland</td><td>Medemblik</td><td>Residential Care</td>
+            <td>&#8364; 38,500</td><td>&#8364; 0</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-blue" style="width:0%"></div></div> 0%</div></td>
+            <td><span class="status-pill status-suspended">&#9679; Suspended</span></td>
+          </tr>
+          <tr data-insurer="VGZ" data-region="DUO" data-status="Active">
+            <td><strong>JC-2025-011</strong></td><td>VGZ</td><td>DUO</td><td>Diemen</td><td>Youth Services</td>
+            <td>&#8364; 52,000</td><td>&#8364; 33,280</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-blue" style="width:64%"></div></div> 64%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr data-insurer="ONVZ" data-region="Aalsmeer/Amstelveen" data-status="Active">
+            <td><strong>JC-2025-012</strong></td><td>ONVZ</td><td>Aalsmeer/Amstelveen</td><td>Amstelveen</td><td>Day Support</td>
+            <td>&#8364; 28,500</td><td>&#8364; 17,100</td>
+            <td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill fill-blue" style="width:60%"></div></div> 60%</div></td>
+            <td><span class="status-pill status-active">&#9679; Active</span></td>
+          </tr>
+          <tr id="contractNoResults" style="display:none">
+            <td colspan="9" style="text-align:center;padding:24px;color:#9CA3AF;font-size:14px">No contracts match the selected filters.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SCREEN 6 — REPORTS & DECLARATIONS                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-reports">
+
+  <nav class="topnav">
+    <div class="brand" onclick="navigateTo('overview')">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link" data-nav="overview" onclick="navigateTo('overview')">Overview</a>
+      <a class="nav-link" data-nav="contracts" onclick="navigateTo('contracts')">Contracts</a>
+      <a class="nav-link" data-nav="validation" onclick="navigateTo('errors')">Validation</a>
+      <a class="nav-link active" data-nav="reports" onclick="navigateTo('reports')">Reports</a>
+    </div>
+    <div class="nav-right">
+      <div class="avatar">MV</div>
+      <span class="nav-username">Mila van den Heuvel</span>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Reports &amp; Declarations</div>
+      <div class="page-sub">Billing overview Jan&#8211;Feb 2025</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline"><span class="btn-icon">&#8595;</span> Download Selected</button>
+      <button class="btn btn-primary"><span class="btn-icon">&#128196;</span> Generate Report</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- KPI Summary -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Submitted</div>
+        <div class="kpi-value" id="reportsSubmittedValue">&#8364; 248,432</div>
+        <div class="kpi-sub" id="reportsSubmittedSub">12 declarations</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total Approved</div>
+        <div class="kpi-value" style="color:#059669" id="reportsApprovedValue">&#8364; 189,871</div>
+        <div class="kpi-sub" id="reportsApprovedSub">76.4% approval rate</div>
+        <span class="kpi-badge badge-green">&#10003; On target</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pending</div>
+        <div class="kpi-value" style="color:#3B6FE8" id="reportsPendingValue">&#8364; 41,200</div>
+        <div class="kpi-sub">Awaiting review</div>
+        <span class="kpi-badge badge-blue">&#9684; In progress</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Rejected</div>
+        <div class="kpi-value" style="color:#DC2626" id="reportsRejectedValue">&#8364; 17,361</div>
+        <div class="kpi-sub">Requires resubmission</div>
+        <span class="kpi-badge badge-red">&#9679; Action needed</span>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <select class="filter-select" id="reportFilterMunicipality" onchange="applyReportFilters()">
+        <option value="">All Municipalities</option>
+        <option>Amstelveen</option>
+        <option>Zaanstad</option>
+        <option>Oostzaan</option>
+        <option>Wormerland</option>
+        <option>Aalsmeer</option>
+        <option>Amsterdam</option>
+        <option>Diemen</option>
+      </select>
+      <select class="filter-select" id="reportFilterRegion" onchange="applyReportFilters()">
+        <option value="">All Regions</option>
+        <option>Amsterdam-Amstelland</option>
+        <option>Zaanstreek-Waterland</option>
+      </select>
+      <select class="filter-select" id="reportFilterStatus" onchange="applyReportFilters()">
+        <option value="">All Statuses</option>
+        <option>Approved</option>
+        <option>Partial</option>
+        <option>Pending</option>
+        <option>Rejected</option>
+      </select>
+      <button class="btn btn-outline" onclick="resetReportFilters()" style="padding:7px 14px;font-size:13px">Reset</button>
+    </div>
+
+    <!-- Declarations Table -->
+    <div class="panel" style="padding:0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Date</th>
+            <th>Municipality</th>
+            <th>Region</th>
+            <th>EI-Type</th>
+            <th>Submitted</th>
+            <th>Approved</th>
+            <th>Difference</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="reportTableBody">
+          <tr data-municipality="Amstelveen" data-region="Amsterdam-Amstelland" data-status="Partial" data-submitted="19989.97" data-approved="8662.05">
+            <td><strong>B3375</strong></td>
+            <td>14-02-2025</td>
+            <td>Amstelveen</td>
+            <td>Amsterdam-Amstelland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 19,989.97</td>
+            <td>&#8364; 8,662.05</td>
+            <td class="amount-negative">&#8722; &#8364; 11,327.92</td>
+            <td><span class="status-pill status-partial">&#9684; Partial</span></td>
+          </tr>
+          <tr data-municipality="Zaanstad" data-region="Zaanstreek-Waterland" data-status="Approved" data-submitted="34096.16" data-approved="34096.16">
+            <td><strong>B3376</strong></td>
+            <td>14-02-2025</td>
+            <td>Zaanstad</td>
+            <td>Zaanstreek-Waterland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 34,096.16</td>
+            <td>&#8364; 34,096.16</td>
+            <td class="amount-positive">&#8364; 0.00</td>
+            <td><span class="status-pill status-approved">&#10003; Approved</span></td>
+          </tr>
+          <tr data-municipality="Oostzaan" data-region="Zaanstreek-Waterland" data-status="Partial" data-submitted="12980.65" data-approved="7654.24">
+            <td><strong>B3377</strong></td>
+            <td>14-02-2025</td>
+            <td>Oostzaan</td>
+            <td>Zaanstreek-Waterland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 12,980.65</td>
+            <td>&#8364; 7,654.24</td>
+            <td class="amount-negative">&#8722; &#8364; 5,326.41</td>
+            <td><span class="status-pill status-partial">&#9684; Partial</span></td>
+          </tr>
+          <tr data-municipality="Wormerland" data-region="Zaanstreek-Waterland" data-status="Partial" data-submitted="10629.86" data-approved="7949.49">
+            <td><strong>B3378</strong></td>
+            <td>14-02-2025</td>
+            <td>Wormerland</td>
+            <td>Zaanstreek-Waterland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 10,629.86</td>
+            <td>&#8364; 7,949.49</td>
+            <td class="amount-negative">&#8722; &#8364; 2,680.37</td>
+            <td><span class="status-pill status-partial">&#9684; Partial</span></td>
+          </tr>
+          <tr data-municipality="Aalsmeer" data-region="Amsterdam-Amstelland" data-status="Approved" data-submitted="7063.30" data-approved="6535.30">
+            <td><strong>B3379</strong></td>
+            <td>14-02-2025</td>
+            <td>Aalsmeer</td>
+            <td>Amsterdam-Amstelland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 7,063.30</td>
+            <td>&#8364; 6,535.30</td>
+            <td class="amount-negative">&#8722; &#8364; 528.00</td>
+            <td><span class="status-pill status-approved">&#10003; Approved</span></td>
+          </tr>
+          <tr data-municipality="Amstelveen" data-region="Amsterdam-Amstelland" data-status="Approved" data-submitted="11200.00" data-approved="11200.00">
+            <td><strong>B3380</strong></td>
+            <td>14-02-2025</td>
+            <td>Amstelveen</td>
+            <td>Amsterdam-Amstelland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 11,200.00</td>
+            <td>&#8364; 11,200.00</td>
+            <td class="amount-positive">&#8364; 0.00</td>
+            <td><span class="status-pill status-approved">&#10003; Approved</span></td>
+          </tr>
+          <tr data-municipality="Amsterdam" data-region="Amsterdam-Amstelland" data-status="Approved" data-submitted="45320.00" data-approved="45320.00">
+            <td><strong>B3381</strong></td>
+            <td>21-02-2025</td>
+            <td>Amsterdam</td>
+            <td>Amsterdam-Amstelland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 45,320.00</td>
+            <td>&#8364; 45,320.00</td>
+            <td class="amount-positive">&#8364; 0.00</td>
+            <td><span class="status-pill status-approved">&#10003; Approved</span></td>
+          </tr>
+          <tr data-municipality="Diemen" data-region="Amsterdam-Amstelland" data-status="Pending" data-submitted="28450.00" data-approved="0">
+            <td><strong>B3382</strong></td>
+            <td>21-02-2025</td>
+            <td>Diemen</td>
+            <td>Amsterdam-Amstelland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 28,450.00</td>
+            <td>&#8364; 0.00</td>
+            <td class="amount-negative">&#8722; &#8364; 28,450.00</td>
+            <td><span class="status-pill status-pending">&#9684; Pending</span></td>
+          </tr>
+          <tr data-municipality="Aalsmeer" data-region="Amsterdam-Amstelland" data-status="Approved" data-submitted="22100.00" data-approved="22100.00">
+            <td><strong>B3383</strong></td>
+            <td>28-02-2025</td>
+            <td>Aalsmeer</td>
+            <td>Amsterdam-Amstelland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 22,100.00</td>
+            <td>&#8364; 22,100.00</td>
+            <td class="amount-positive">&#8364; 0.00</td>
+            <td><span class="status-pill status-approved">&#10003; Approved</span></td>
+          </tr>
+          <tr data-municipality="Zaanstad" data-region="Zaanstreek-Waterland" data-status="Rejected" data-submitted="17361.00" data-approved="0">
+            <td><strong>B3384</strong></td>
+            <td>28-02-2025</td>
+            <td>Zaanstad</td>
+            <td>Zaanstreek-Waterland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 17,361.00</td>
+            <td>&#8364; 0.00</td>
+            <td class="amount-negative">&#8722; &#8364; 17,361.00</td>
+            <td><span class="status-pill status-rejected">&#10005; Rejected</span></td>
+          </tr>
+          <tr data-municipality="Wormerland" data-region="Zaanstreek-Waterland" data-status="Pending" data-submitted="12750.00" data-approved="0">
+            <td><strong>B3385</strong></td>
+            <td>28-02-2025</td>
+            <td>Wormerland</td>
+            <td>Zaanstreek-Waterland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 12,750.00</td>
+            <td>&#8364; 0.00</td>
+            <td class="amount-negative">&#8722; &#8364; 12,750.00</td>
+            <td><span class="status-pill status-pending">&#9684; Pending</span></td>
+          </tr>
+          <tr data-municipality="Amstelveen" data-region="Amsterdam-Amstelland" data-status="Approved" data-submitted="26491.06" data-approved="26353.76">
+            <td><strong>B3386</strong></td>
+            <td>28-02-2025</td>
+            <td>Amstelveen</td>
+            <td>Amsterdam-Amstelland</td>
+            <td>JW323 v3.2</td>
+            <td>&#8364; 26,491.06</td>
+            <td>&#8364; 26,353.76</td>
+            <td class="amount-negative">&#8722; &#8364; 137.30</td>
+            <td><span class="status-pill status-approved">&#10003; Approved</span></td>
+          </tr>
+          <tr id="reportNoResults" style="display:none">
+            <td colspan="9" style="text-align:center;padding:24px;color:#9CA3AF;font-size:14px">No declarations match the selected filters.</td>
+          </tr>
+          <tr class="total-row" id="reportTotalRow">
+            <td><strong>Total</strong></td>
+            <td></td><td></td><td></td><td></td>
+            <td><strong id="reportTotalSubmitted">&#8364; 248,432.00</strong></td>
+            <td><strong id="reportTotalApproved">&#8364; 189,871.00</strong></td>
+            <td><strong class="amount-negative" id="reportTotalDiff">&#8722; &#8364; 58,561.00</strong></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT — Navigation & Interactions                        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+  const screens = {
+    overview:  { el: 'screen-overview',  label: 'Screen 1 — Overview' },
+    filter:    { el: 'screen-filter',    label: 'Screen 2 — Filter Open' },
+    errors:    { el: 'screen-errors',    label: 'Screen 3 — Error Details' },
+    export:    { el: 'screen-export',    label: 'Screen 4 — Export Modal' },
+    contracts: { el: 'screen-contracts', label: 'Screen 5 — Contracts' },
+    reports:   { el: 'screen-reports',   label: 'Screen 6 — Reports' }
+  };
+
+  let filtersApplied = false;
+
+  // Parse the screen name from hash, preserving Figma capture params
+  function getScreenFromHash() {
+    const hash = window.location.hash.replace('#', '');
+    if (!hash) return 'overview';
+    return hash.split('&')[0];
+  }
+
+  // Check if this is a Figma capture session
+  function isFigmaCapture() {
+    return window.location.hash.indexOf('figmacapture') !== -1;
+  }
+
+  function navigateTo(screen) {
+    // During Figma capture, don't navigate away
+    if (isFigmaCapture()) return;
+
+    // Hide all screens
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+    // Show target screen
+    const target = screens[screen];
+    if (target) {
+      document.getElementById(target.el).classList.add('active');
+      document.getElementById('screenLabel').textContent = target.label;
+
+      // Update active nav link highlighting on the target screen
+      var navMap = { overview: 'overview', filter: 'overview', export: 'overview', errors: 'validation', contracts: 'contracts', reports: 'reports' };
+      var activeNav = navMap[screen] || 'overview';
+      var targetEl = document.getElementById(target.el);
+      targetEl.querySelectorAll('.nav-link').forEach(function(link) {
+        link.classList.remove('active');
+        if (link.getAttribute('data-nav') === activeNav) link.classList.add('active');
+      });
+
+      // Update hash without triggering hashchange
+      history.replaceState(null, '', '#' + screen);
+
+      // Scroll to top
+      window.scrollTo(0, 0);
+    }
+
+    // Update filter button state on overview
+    if (screen === 'overview' && filtersApplied) {
+      const btn = document.getElementById('filterBtn');
+      btn.className = 'btn btn-filters-active';
+      btn.innerHTML = '<span class="btn-icon">&#9881;</span> Filters Active';
+    }
+  }
+
+  function showScreen(screen) {
+    // Internal function that shows a screen without modifying the hash
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = screens[screen];
+    if (target) {
+      document.getElementById(target.el).classList.add('active');
+      document.getElementById('screenLabel').textContent = target.label;
+    }
+  }
+
+  function applyFilters() {
+    filtersApplied = true;
+    navigateTo('overview');
+  }
+
+  var SYNTHETIC_DATA = {
+    reports: [
+      { invoice: 'B5001', date: '03-03-2026', municipality: 'Amstelveen', region: 'Amsterdam-Amstelland', type: 'JW323 v3.2', submitted: 15840.25, approved: 15210.25, status: 'Approved' },
+      { invoice: 'B5002', date: '03-03-2026', municipality: 'Zaanstad', region: 'Zaanstreek-Waterland', type: 'JW323 v3.2', submitted: 22400.00, approved: 20800.00, status: 'Partial' },
+      { invoice: 'B5003', date: '04-03-2026', municipality: 'Aalsmeer', region: 'Amsterdam-Amstelland', type: 'JW323 v3.2', submitted: 11890.00, approved: 11890.00, status: 'Approved' },
+      { invoice: 'B5004', date: '04-03-2026', municipality: 'Wormerland', region: 'Zaanstreek-Waterland', type: 'JW323 v3.2', submitted: 13420.45, approved: 0, status: 'Pending' },
+      { invoice: 'B5005', date: '05-03-2026', municipality: 'Amsterdam', region: 'Amsterdam-Amstelland', type: 'JW323 v3.2', submitted: 31760.30, approved: 31760.30, status: 'Approved' },
+      { invoice: 'B5006', date: '06-03-2026', municipality: 'Diemen', region: 'Amsterdam-Amstelland', type: 'JW323 v3.2', submitted: 9640.10, approved: 0, status: 'Rejected' },
+      { invoice: 'B5007', date: '07-03-2026', municipality: 'Oostzaan', region: 'Zaanstreek-Waterland', type: 'JW323 v3.2', submitted: 12875.00, approved: 11850.00, status: 'Partial' },
+      { invoice: 'B5008', date: '08-03-2026', municipality: 'Amstelveen', region: 'Amsterdam-Amstelland', type: 'JW323 v3.2', submitted: 18450.00, approved: 18450.00, status: 'Approved' },
+      { invoice: 'B5009', date: '10-03-2026', municipality: 'Zaanstad', region: 'Zaanstreek-Waterland', type: 'JW323 v3.2', submitted: 14220.00, approved: 0, status: 'Pending' },
+      { invoice: 'B5010', date: '11-03-2026', municipality: 'Aalsmeer', region: 'Amsterdam-Amstelland', type: 'JW323 v3.2', submitted: 10680.00, approved: 10680.00, status: 'Approved' },
+      { invoice: 'B5011', date: '12-03-2026', municipality: 'Wormerland', region: 'Zaanstreek-Waterland', type: 'JW323 v3.2', submitted: 9980.70, approved: 9150.00, status: 'Partial' },
+      { invoice: 'B5012', date: '13-03-2026', municipality: 'Amsterdam', region: 'Amsterdam-Amstelland', type: 'JW323 v3.2', submitted: 26500.00, approved: 26500.00, status: 'Approved' }
+    ],
+    contracts: [
+      { id: 'JC-2026-001', insurer: 'ASR', region: 'Aalsmeer/Amstelveen', municipality: 'Aalsmeer', category: 'Residential Care', ceiling: 132000, used: 94380, status: 'Active' },
+      { id: 'JC-2026-002', insurer: 'Menzis', region: 'Amsterdam/Weesp', municipality: 'Amsterdam', category: 'Day Support', ceiling: 45000, used: 30150, status: 'Active' },
+      { id: 'JC-2026-003', insurer: 'VGZ', region: 'DUO', municipality: 'Diemen', category: 'Mental Health', ceiling: 97000, used: 91180, status: 'Expiring Soon' },
+      { id: 'JC-2026-004', insurer: 'CZ', region: 'Aalsmeer/Amstelveen', municipality: 'Amstelveen', category: 'Residential Care', ceiling: 175000, used: 124250, status: 'Active' },
+      { id: 'JC-2026-005', insurer: 'Zilveren Kruis', region: 'Amsterdam/Weesp', municipality: 'Amsterdam', category: 'Home Assistance', ceiling: 146000, used: 94900, status: 'Active' },
+      { id: 'JC-2026-006', insurer: 'ONVZ', region: 'West-Friesland', municipality: 'Medemblik', category: 'Youth Services', ceiling: 38000, used: 26600, status: 'Active' },
+      { id: 'JC-2026-007', insurer: 'CZ', region: 'DUO', municipality: 'Ouder-Amstel', category: 'Day Support', ceiling: 72000, used: 56880, status: 'Active' },
+      { id: 'JC-2026-008', insurer: 'ASR', region: 'Amsterdam/Weesp', municipality: 'Amsterdam', category: 'Mental Health', ceiling: 52000, used: 48360, status: 'Expiring Soon' },
+      { id: 'JC-2026-009', insurer: 'Menzis', region: 'West-Friesland', municipality: 'Medemblik', category: 'Residential Care', ceiling: 41500, used: 0, status: 'Suspended' },
+      { id: 'JC-2026-010', insurer: 'ONVZ', region: 'Aalsmeer/Amstelveen', municipality: 'Amstelveen', category: 'Day Support', ceiling: 30500, used: 18300, status: 'Active' }
+    ],
+    errors: [
+      { type: 'Missing field', summary: 'Municipality code blank', caseId: 'ER-8101', insurer: 'VGZ', region: 'DUO', severity: 'High', status: 'Open', detected: '14 Mar' },
+      { type: 'Ceiling mismatch', summary: 'Declared amount exceeds cap', caseId: 'ER-8102', insurer: 'Zilveren Kruis', region: 'Noord', severity: 'High', status: 'Review', detected: '14 Mar' },
+      { type: 'Invalid category', summary: 'Unknown care category code', caseId: 'ER-8103', insurer: 'CZ Groep', region: 'Zuid', severity: 'Medium', status: 'Open', detected: '13 Mar' },
+      { type: 'Duplicate record', summary: 'Duplicate claim detected', caseId: 'ER-8104', insurer: 'Menzis', region: 'West', severity: 'Medium', status: 'Review', detected: '13 Mar' },
+      { type: 'Date range conflict', summary: 'Service date outside contract window', caseId: 'ER-8105', insurer: 'ASR', region: 'Amsterdam', severity: 'Medium', status: 'Open', detected: '12 Mar' },
+      { type: 'Invalid category', summary: 'Category not in master list', caseId: 'ER-8106', insurer: 'ONVZ', region: 'West', severity: 'Low', status: 'Review', detected: '11 Mar' },
+      { type: 'Reference mismatch', summary: 'Provider code does not match contract', caseId: 'ER-8107', insurer: 'VGZ', region: 'Noord', severity: 'Low', status: 'Open', detected: '10 Mar' },
+      { type: 'Duplicate record', summary: 'Possible repeated submission', caseId: 'ER-8108', insurer: 'CZ Groep', region: 'Zuid', severity: 'Low', status: 'Review', detected: '9 Mar' }
+    ]
+  };
+
+  function formatEuro(amount) {
+    return '€ ' + amount.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function updateKpisFromSyntheticData() {
+    var reportRows = SYNTHETIC_DATA.reports;
+    var contractRows = SYNTHETIC_DATA.contracts;
+    var errorRows = SYNTHETIC_DATA.errors;
+
+    var totalSubmitted = reportRows.reduce(function(sum, row) { return sum + row.submitted; }, 0);
+    var totalApproved = reportRows.reduce(function(sum, row) { return sum + row.approved; }, 0);
+    var totalPending = reportRows.filter(function(row) { return row.status === 'Pending'; }).reduce(function(sum, row) { return sum + row.submitted; }, 0);
+    var totalRejected = reportRows.filter(function(row) { return row.status === 'Rejected'; }).reduce(function(sum, row) { return sum + row.submitted; }, 0);
+
+    var totalCeiling = contractRows.reduce(function(sum, row) { return sum + row.ceiling; }, 0);
+    var usedPct = totalCeiling > 0 ? (totalApproved / totalCeiling) * 100 : 0;
+    var usedPctText = usedPct.toFixed(1) + '%';
+
+    setText('overviewBudgetUsedValue', usedPctText);
+    setText('overviewBudgetUsedSub', formatEuro(totalApproved) + ' of ' + formatEuro(totalCeiling));
+    var budgetProgress = document.getElementById('overviewBudgetUsedProgress');
+    if (budgetProgress) budgetProgress.style.width = Math.min(100, Math.max(0, usedPct)).toFixed(1) + '%';
+
+    var remainingBudget = Math.max(0, totalCeiling - totalApproved);
+    var monthlyBurn = totalSubmitted / 3;
+    var daysToBreach = monthlyBurn > 0 ? Math.round(remainingBudget / (monthlyBurn / 30)) : 365;
+    daysToBreach = Math.max(1, Math.min(daysToBreach, 365));
+    var breachDate = new Date();
+    breachDate.setDate(breachDate.getDate() + daysToBreach);
+    var breachLabel = breachDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    setText('overviewDaysToBreachValue', String(daysToBreach));
+    setText('overviewDaysToBreachSub', 'Predicted breach: ' + breachLabel);
+
+    var firstHalfAvg = reportRows.slice(0, 6).reduce(function(sum, row) { return sum + row.submitted; }, 0) / 6;
+    var secondHalfAvg = reportRows.slice(6).reduce(function(sum, row) { return sum + row.submitted; }, 0) / 6;
+    var trendPct = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100 : 0;
+    var trendPrefix = trendPct >= 0 ? '+' : '';
+    setText('overviewSpendingTrendValue', trendPrefix + trendPct.toFixed(1) + '%');
+    setText('overviewSpendingTrendSub', 'Synthetic month-over-month change');
+
+    var openIssues = errorRows.filter(function(row) { return row.status === 'Open'; }).length;
+    var reviewIssues = errorRows.filter(function(row) { return row.status === 'Review'; }).length;
+    var totalIssues = errorRows.length;
+    setText('overviewDataErrorsValue', String(totalIssues));
+    setText('overviewDataErrorsSub', openIssues + ' open | ' + reviewIssues + ' under review');
+    setText('errorSummaryOpen', String(openIssues));
+    setText('errorSummaryReview', String(reviewIssues));
+    setText('errorSummaryTotal', String(totalIssues));
+    setText('errorPageSub', totalIssues + ' issues found - Fiscal year 2025-2026 | All insurers | All municipalities');
+
+    var activeContracts = contractRows.filter(function(row) { return row.status === 'Active'; }).length;
+    var expiringContracts = contractRows.filter(function(row) { return row.status === 'Expiring Soon'; }).length;
+    var insurers = new Set(contractRows.map(function(row) { return row.insurer; }));
+    setText('contractsTotalValue', String(contractRows.length));
+    setText('contractsTotalSub', 'Across ' + insurers.size + ' insurers');
+    setText('contractsActiveValue', String(activeContracts));
+    setText('contractsActiveSub', Math.round((activeContracts / contractRows.length) * 100) + '% currently running');
+    setText('contractsExpiringValue', String(expiringContracts));
+    setText('contractsCeilingValue', formatEuro(totalCeiling));
+
+    var approvalRate = totalSubmitted > 0 ? (totalApproved / totalSubmitted) * 100 : 0;
+    setText('reportsSubmittedValue', formatEuro(totalSubmitted));
+    setText('reportsSubmittedSub', reportRows.length + ' declarations');
+    setText('reportsApprovedValue', formatEuro(totalApproved));
+    setText('reportsApprovedSub', approvalRate.toFixed(1) + '% approval rate');
+    setText('reportsPendingValue', formatEuro(totalPending));
+    setText('reportsRejectedValue', formatEuro(totalRejected));
+  }
+
+  function statusClassForReport(status) {
+    return {
+      Approved: 'status-approved',
+      Partial: 'status-partial',
+      Pending: 'status-pending',
+      Rejected: 'status-rejected'
+    }[status] || 'status-pending';
+  }
+
+  function symbolForStatus(status) {
+    if (status === 'Approved') return '&#10003;';
+    if (status === 'Rejected') return '&#10005;';
+    return '&#9684;';
+  }
+
+  function renderSyntheticReportRows() {
+    var rows = SYNTHETIC_DATA.reports;
+
+    var tbody = document.getElementById('reportTableBody');
+    var noResultsRow = document.getElementById('reportNoResults');
+    tbody.querySelectorAll('tr[data-municipality]').forEach(function(row) { row.remove(); });
+
+    rows.forEach(function(row) {
+      var diff = row.approved - row.submitted;
+      var diffClass = diff < 0 ? 'amount-negative' : 'amount-positive';
+      var diffText = diff < 0 ? ('− ' + formatEuro(Math.abs(diff))) : formatEuro(diff);
+      var html = '' +
+        '<tr data-municipality="' + row.municipality + '" data-region="' + row.region + '" data-status="' + row.status + '" data-submitted="' + row.submitted + '" data-approved="' + row.approved + '">' +
+          '<td><strong>' + row.invoice + '</strong></td>' +
+          '<td>' + row.date + '</td>' +
+          '<td>' + row.municipality + '</td>' +
+          '<td>' + row.region + '</td>' +
+          '<td>' + row.type + '</td>' +
+          '<td>' + formatEuro(row.submitted) + '</td>' +
+          '<td>' + formatEuro(row.approved) + '</td>' +
+          '<td class="' + diffClass + '">' + diffText + '</td>' +
+          '<td><span class="status-pill ' + statusClassForReport(row.status) + '">' + symbolForStatus(row.status) + ' ' + row.status + '</span></td>' +
+        '</tr>';
+      noResultsRow.insertAdjacentHTML('beforebegin', html);
+    });
+  }
+
+  function renderSyntheticContractRows() {
+    var rows = SYNTHETIC_DATA.contracts;
+
+    function statusPill(status) {
+      if (status === 'Expiring Soon') return '<span class="status-pill status-expiring">&#9888; Expiring Soon</span>';
+      if (status === 'Suspended') return '<span class="status-pill status-suspended">&#9679; Suspended</span>';
+      return '<span class="status-pill status-active">&#9679; Active</span>';
+    }
+
+    var tbody = document.getElementById('contractTableBody');
+    var noResultsRow = document.getElementById('contractNoResults');
+    tbody.querySelectorAll('tr[data-insurer]').forEach(function(row) { row.remove(); });
+
+    rows.forEach(function(row) {
+      var percent = row.ceiling > 0 ? Math.round((row.used / row.ceiling) * 100) : 0;
+      var fillClass = percent >= 90 ? 'fill-red' : (percent >= 75 ? 'fill-amber' : 'fill-blue');
+      var html = '' +
+        '<tr data-insurer="' + row.insurer + '" data-region="' + row.region + '" data-status="' + row.status + '">' +
+          '<td><strong>' + row.id + '</strong></td>' +
+          '<td>' + row.insurer + '</td>' +
+          '<td>' + row.region + '</td>' +
+          '<td>' + row.municipality + '</td>' +
+          '<td>' + row.category + '</td>' +
+          '<td>' + formatEuro(row.ceiling) + '</td>' +
+          '<td>' + formatEuro(row.used) + '</td>' +
+          '<td><div class="cell-progress"><div class="progress-bar"><div class="progress-fill ' + fillClass + '" style="width:' + percent + '%"></div></div> ' + percent + '%</div></td>' +
+          '<td>' + statusPill(row.status) + '</td>' +
+        '</tr>';
+      noResultsRow.insertAdjacentHTML('beforebegin', html);
+    });
+  }
+
+  function renderSyntheticErrorRows() {
+    var rows = SYNTHETIC_DATA.errors;
+
+    function severityPill(severity) {
+      var map = { High: 'sev-high', Medium: 'sev-med', Low: 'sev-low' };
+      return '<span class="severity-pill ' + map[severity] + '">' + severity + '</span>';
+    }
+    function statusBadge(status) {
+      if (status === 'Open') return '<span class="status-badge status-open">&#9679; Open</span>';
+      return '<span class="status-badge status-review">&#9684; Review</span>';
+    }
+
+    var tbody = document.getElementById('errorTableBody');
+    var noResultsRow = document.getElementById('errorNoResults');
+    tbody.querySelectorAll('tr[data-severity]').forEach(function(row) { row.remove(); });
+
+    rows.forEach(function(row) {
+      var html = '' +
+        '<tr data-severity="' + row.severity + '" data-status="' + row.status + '" data-type="' + row.type + '">' +
+          '<td><strong>' + row.type + '</strong><br><span style="font-size:12px;color:#9CA3AF">' + row.summary + '</span></td>' +
+          '<td>' + row.caseId + '</td>' +
+          '<td>' + row.insurer + '</td>' +
+          '<td>' + row.region + '</td>' +
+          '<td>' + severityPill(row.severity) + '</td>' +
+          '<td>' + statusBadge(row.status) + '</td>' +
+          '<td>' + row.detected + '</td>' +
+          '<td><a class="action-link">Review &#8594;</a></td>' +
+        '</tr>';
+      noResultsRow.insertAdjacentHTML('beforebegin', html);
+    });
+  }
+
+  function initializeSyntheticData() {
+    renderSyntheticErrorRows();
+    renderSyntheticContractRows();
+    renderSyntheticReportRows();
+    updateKpisFromSyntheticData();
+    applyErrorFilters();
+    applyContractFilters();
+    applyReportFilters();
+  }
+
+  function selectFormat(el) {
+    document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function selectScope(el) {
+    document.querySelectorAll('.scope-option').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input[type=radio]').checked = true;
+  }
+
+  function generateReport() {
+    const toast = document.getElementById('successToast');
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => navigateTo('overview'), 200);
+    }, 2000);
+  }
+
+  // Handle initial hash on page load
+  function handleHash() {
+    const screen = getScreenFromHash();
+    if (screen && screens[screen]) {
+      showScreen(screen);
+    } else {
+      showScreen('overview');
+    }
+  }
+
+  // Listen for hash changes (only if not in Figma capture mode)
+  window.addEventListener('hashchange', function() {
+    if (!isFigmaCapture()) {
+      handleHash();
+    }
+  });
+
+  // Initial load — use showScreen to avoid modifying hash
+  handleHash();
+  initializeSyntheticData();
+
+  // ── REPORTS FILTER ──────────────────────────────────────────────
+  function applyReportFilters() {
+    var municipality = document.getElementById('reportFilterMunicipality').value;
+    var region       = document.getElementById('reportFilterRegion').value;
+    var status       = document.getElementById('reportFilterStatus').value;
+
+    var rows = document.querySelectorAll('#reportTableBody tr[data-municipality]');
+    var visibleCount = 0;
+    var totalSubmitted = 0;
+    var totalApproved  = 0;
+
+    rows.forEach(function(row) {
+      var mMatch = !municipality || row.dataset.municipality === municipality;
+      var rMatch = !region       || row.dataset.region       === region;
+      var sMatch = !status       || row.dataset.status       === status;
+      var visible = mMatch && rMatch && sMatch;
+      row.style.display = visible ? '' : 'none';
+      if (visible) {
+        visibleCount++;
+        totalSubmitted += parseFloat(row.dataset.submitted) || 0;
+        totalApproved  += parseFloat(row.dataset.approved)  || 0;
+      }
+    });
+
+    // Show/hide "no results" row
+    document.getElementById('reportNoResults').style.display = visibleCount === 0 ? '' : 'none';
+
+    // Update totals
+    var diff = totalApproved - totalSubmitted;
+    document.getElementById('reportTotalSubmitted').textContent = '€ ' + totalSubmitted.toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2});
+    document.getElementById('reportTotalApproved').textContent  = '€ ' + totalApproved.toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2});
+    var diffEl = document.getElementById('reportTotalDiff');
+    if (diff < 0) {
+      diffEl.textContent = '− € ' + Math.abs(diff).toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2});
+      diffEl.className = 'amount-negative';
+    } else {
+      diffEl.textContent = '€ ' + diff.toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2});
+      diffEl.className = 'amount-positive';
+    }
+    // Hide total row if no results
+    document.getElementById('reportTotalRow').style.display = visibleCount === 0 ? 'none' : '';
+  }
+
+  function resetReportFilters() {
+    document.getElementById('reportFilterMunicipality').value = '';
+    document.getElementById('reportFilterRegion').value = '';
+    document.getElementById('reportFilterStatus').value = '';
+    applyReportFilters();
+  }
+
+  function applyContractFilters() {
+    var insurer = document.getElementById('contractFilterInsurer').value;
+    var region  = document.getElementById('contractFilterRegion').value;
+    var status  = document.getElementById('contractFilterStatus').value;
+    var rows = document.querySelectorAll('#contractTableBody tr[data-insurer]');
+    var visible = 0;
+    rows.forEach(function(row) {
+      var show = (!insurer || row.dataset.insurer === insurer) &&
+                 (!region  || row.dataset.region  === region)  &&
+                 (!status  || row.dataset.status  === status);
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    document.getElementById('contractNoResults').style.display = visible === 0 ? '' : 'none';
+  }
+  function resetContractFilters() {
+    document.getElementById('contractFilterInsurer').value = '';
+    document.getElementById('contractFilterRegion').value  = '';
+    document.getElementById('contractFilterStatus').value  = '';
+    applyContractFilters();
+  }
+
+  function applyErrorFilters() {
+    var severity = document.getElementById('errorFilterSeverity').value;
+    var status   = document.getElementById('errorFilterStatus').value;
+    var type     = document.getElementById('errorFilterType').value;
+    var rows = document.querySelectorAll('#errorTableBody tr[data-severity]');
+    var visible = 0;
+    rows.forEach(function(row) {
+      var show = (!severity || row.dataset.severity === severity) &&
+                 (!status   || row.dataset.status   === status)   &&
+                 (!type     || row.dataset.type     === type);
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    document.getElementById('errorNoResults').style.display = visible === 0 ? '' : 'none';
+  }
+  function resetErrorFilters() {
+    document.getElementById('errorFilterSeverity').value = '';
+    document.getElementById('errorFilterStatus').value   = '';
+    document.getElementById('errorFilterType').value     = '';
+    applyErrorFilters();
+  }
+</script>
+
+</body>
+</html>

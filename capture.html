@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>FundFlow — Capture</title>
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    background: #F0F2F5;
+    min-width: 1440px;
+    min-height: 100vh;
+  }
+  .screen-label {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 9999;
+    background: rgba(28, 42, 74, 0.85);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    pointer-events: none;
+  }
+  .screen {
+    display: none;
+    width: 1440px;
+    min-height: 100vh;
+    background: #F7F8FA;
+    margin: 0 auto;
+  }
+  .screen.active { display: block; }
+  .topnav {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    height: 60px;
+  }
+  .brand {
+    font-size: 18px; font-weight: 700; color: #1C2A4A;
+    letter-spacing: -0.3px; margin-right: 48px;
+  }
+  .brand span { color: #3B6FE8; }
+  .nav-links { display: flex; gap: 4px; flex: 1; }
+  .nav-link {
+    padding: 8px 16px; border-radius: 6px; font-size: 14px;
+    font-weight: 500; color: #6B7280; text-decoration: none;
+  }
+  .nav-link.active { background: #EEF3FD; color: #3B6FE8; font-weight: 600; }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #3B6FE8; color: #fff; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-username { font-size: 14px; color: #374151; font-weight: 500; }
+  .page-header {
+    background: #FFFFFF; padding: 24px 32px 20px;
+    border-bottom: 1px solid #E5E7EB; display: flex;
+    align-items: flex-start; justify-content: space-between;
+  }
+  .page-title { font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.3px; }
+  .page-sub { font-size: 13px; color: #9CA3AF; margin-top: 3px; }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 7px; font-size: 14px;
+    font-weight: 500; cursor: pointer; border: none;
+  }
+  .btn-outline { background: #FFFFFF; border: 1.5px solid #D1D5DB; color: #374151; }
+  .btn-primary { background: #3B6FE8; color: #FFFFFF; }
+  .btn-icon { font-size: 15px; }
+  .btn-filters-active { background: #3B6FE8; color: #FFFFFF; border: 1.5px solid #3B6FE8; }
+  .content { padding: 28px 32px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: #FFFFFF; border-radius: 10px; padding: 20px 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #E5E7EB;
+  }
+  .kpi-label { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .kpi-value { font-size: 30px; font-weight: 700; color: #111827; letter-spacing: -0.5px; line-height: 1; }
+  .kpi-sub { font-size: 13px; color: #6B7280; margin-top: 8px; }
+  .kpi-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 8px;
+  }
+  .badge-green { background: #ECFDF5; color: #059669; }
+  .badge-amber { background: #FFFBEB; color: #D97706; }
+  .badge-red { background: #FEF2F2; color: #DC2626; }
+  .badge-blue { background: #EEF3FD; color: #3B6FE8; }
+  .progress-bar { background: #F3F4F6; border-radius: 4px; height: 6px; margin-top: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; }
+  .fill-blue { background: #3B6FE8; }
+  .fill-amber { background: #F59E0B; }
+  .fill-red { background: #EF4444; }
+  .chart-section {
+    background: #FFFFFF; border-radius: 10px; padding: 22px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #E5E7EB; margin-bottom: 24px;
+  }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .section-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .legend { display: flex; gap: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6B7280; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-blue { background: #3B6FE8; }
+  .dot-amber { background: #F59E0B; }
+  .dot-red { background: #EF4444; }
+  .chart-wrapper { width: 100%; }
+  .chart-labels { display: flex; justify-content: space-between; margin-top: 8px; padding: 0 8px; }
+  .chart-label { font-size: 11px; color: #9CA3AF; }
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .panel {
+    background: #FFFFFF; border-radius: 10px; padding: 20px 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #E5E7EB;
+  }
+  .error-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid #F3F4F6;
+  }
+  .error-row:last-child { border-bottom: none; }
+  .error-meta { flex: 1; }
+  .error-title { font-size: 14px; font-weight: 500; color: #111827; }
+  .error-desc { font-size: 12px; color: #9CA3AF; margin-top: 2px; }
+  .severity-pill { padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .sev-high { background: #FEF2F2; color: #DC2626; }
+  .sev-med  { background: #FFFBEB; color: #D97706; }
+  .sev-low  { background: #F0FDF4; color: #16A34A; }
+  .trend-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid #F3F4F6;
+  }
+  .trend-row:last-child { border-bottom: none; }
+  .trend-label { font-size: 14px; color: #374151; font-weight: 500; }
+  .trend-val { font-size: 14px; font-weight: 600; }
+  .action-link { color: #3B6FE8; font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; }
+  .filter-panel {
+    background: #FFFFFF; border-radius: 10px; border: 1.5px solid #3B6FE8;
+    box-shadow: 0 8px 32px rgba(59,111,232,0.12); padding: 20px 22px; margin-bottom: 24px;
+  }
+  .filter-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .filter-panel-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .filter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+  .filter-field label { font-size: 12px; font-weight: 600; color: #6B7280; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .filter-select {
+    width: 100%; padding: 8px 12px; border: 1.5px solid #D1D5DB;
+    border-radius: 7px; font-size: 14px; color: #111827;
+    background: #F9FAFB; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .filter-select.active { border-color: #3B6FE8; background-color: #EEF3FD; }
+  .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    background: #EEF3FD; color: #3B6FE8; font-size: 12px; font-weight: 500;
+  }
+  .chip-x { cursor: pointer; font-size: 14px; color: #6B7280; }
+  .filter-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .breadcrumb { font-size: 13px; color: #9CA3AF; margin-bottom: 4px; }
+  .breadcrumb a { color: #3B6FE8; text-decoration: none; font-weight: 500; }
+  .error-table { width: 100%; border-collapse: collapse; }
+  .error-table th {
+    text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600;
+    color: #6B7280; background: #F9FAFB; border-bottom: 1px solid #E5E7EB;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .error-table td { padding: 12px 14px; border-bottom: 1px solid #F3F4F6; font-size: 14px; color: #374151; }
+  .error-table tr:last-child td { border-bottom: none; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .status-open { background: #FEF2F2; color: #DC2626; }
+  .status-review { background: #FFFBEB; color: #D97706; }
+  .summary-bar {
+    display: flex; gap: 24px; padding: 14px 0; margin-bottom: 20px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .sum-item { text-align: center; }
+  .sum-val { font-size: 22px; font-weight: 700; }
+  .sum-label { font-size: 12px; color: #9CA3AF; margin-top: 2px; }
+  .val-red { color: #DC2626; }
+  .val-amber { color: #D97706; }
+  .val-green { color: #059669; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500; color: #3B6FE8; text-decoration: none; margin-bottom: 4px;
+  }
+  .modal-backdrop {
+    position: absolute; top: 120px; left: 0; right: 0; bottom: 0; min-height: 600px;
+    background: rgba(17,24,39,0.35); display: flex;
+    align-items: center; justify-content: center;
+  }
+  .modal {
+    background: #FFFFFF; border-radius: 12px; width: 480px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18); overflow: hidden;
+  }
+  .modal-header {
+    padding: 20px 24px; border-bottom: 1px solid #E5E7EB;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: #111827; }
+  .modal-close { color: #9CA3AF; font-size: 20px; cursor: pointer; }
+  .modal-body { padding: 22px 24px; }
+  .modal-label { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; display: block; }
+  .format-options { display: flex; gap: 10px; margin-bottom: 20px; }
+  .format-card {
+    flex: 1; border: 1.5px solid #E5E7EB; border-radius: 8px;
+    padding: 14px 16px; cursor: pointer; text-align: center;
+  }
+  .format-card.selected { border-color: #3B6FE8; background: #EEF3FD; }
+  .format-icon { font-size: 26px; margin-bottom: 6px; }
+  .format-name { font-size: 14px; font-weight: 600; color: #111827; }
+  .format-desc { font-size: 12px; color: #9CA3AF; margin-top: 2px; }
+  .scope-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .scope-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border: 1.5px solid #E5E7EB;
+    border-radius: 8px; cursor: pointer; font-size: 14px; color: #374151;
+  }
+  .scope-option.selected { border-color: #3B6FE8; background: #EEF3FD; color: #1C2A4A; }
+  .scope-option input[type=radio] { accent-color: #3B6FE8; }
+  .modal-footer {
+    padding: 16px 24px; border-top: 1px solid #E5E7EB;
+    display: flex; justify-content: flex-end; gap: 10px;
+  }
+  .info-row { font-size: 13px; color: #6B7280; margin-bottom: 4px; }
+  .info-row strong { color: #374151; }
+</style>
+</head>
+<body>
+
+<div class="screen-label" id="screenLabel"></div>
+
+<!-- SCREEN 1 — OVERVIEW -->
+<div class="screen" id="screen-overview">
+  <nav class="topnav">
+    <div class="brand">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link active">Overview</a>
+      <a class="nav-link">Contracts</a>
+      <a class="nav-link">Validation</a>
+      <a class="nav-link">Reports</a>
+    </div>
+    <div class="nav-right">
+      <div class="avatar">MV</div>
+      <span class="nav-username">Mila van der Berg</span>
+    </div>
+  </nav>
+  <div class="page-header">
+    <div>
+      <div class="page-title">Overview</div>
+      <div class="page-sub">Last updated: Today at 09:41 — Fiscal year 2024-2025</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline"><span class="btn-icon">&#9881;</span> Filters</button>
+      <button class="btn btn-primary"><span class="btn-icon">&#8595;</span> Export Report</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Budget Used</div>
+        <div class="kpi-value">78.4%</div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" style="width:78.4%"></div></div>
+        <div class="kpi-sub">&#8364; 3,920,000 of &#8364; 5,000,000</div>
+        <span class="kpi-badge badge-amber">&#8593; +4.2% vs last month</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Days Until Predicted Breach</div>
+        <div class="kpi-value" style="color:#D97706">34</div>
+        <div class="progress-bar"><div class="progress-fill fill-amber" style="width:45%"></div></div>
+        <div class="kpi-sub">Predicted breach: 19 Apr 2025</div>
+        <span class="kpi-badge badge-amber">&#9888; Caution — monitor closely</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Data Errors</div>
+        <div class="kpi-value" style="color:#DC2626">12</div>
+        <div class="kpi-sub">8 open &middot; 4 under review</div>
+        <span class="kpi-badge badge-red">&#9679; Action required</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Spending Trend</div>
+        <div class="kpi-value" style="color:#059669">+3.1%</div>
+        <div class="kpi-sub">Month-over-month increase</div>
+        <span class="kpi-badge badge-blue">&#8593; Within forecast range</span>
+      </div>
+    </div>
+    <div class="chart-section">
+      <div class="section-header">
+        <div class="section-title">Spending vs Budget Ceiling — Monthly</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot dot-blue"></div> Actual</div>
+          <div class="legend-item"><div class="legend-dot dot-amber"></div> Forecast</div>
+          <div class="legend-item"><div class="legend-dot dot-red" style="width:24px;height:2px;border-radius:0"></div> Ceiling</div>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <svg width="100%" height="200" viewBox="0 0 1240 200" xmlns="http://www.w3.org/2000/svg">
+          <line x1="0" y1="180" x2="1240" y2="180" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="140" x2="1240" y2="140" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="100" x2="1240" y2="100" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="60" x2="1240" y2="60" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="20" x2="1240" y2="20" stroke="#F3F4F6" stroke-width="1"/>
+          <text x="0" y="183" font-size="11" fill="#9CA3AF">0</text>
+          <text x="0" y="143" font-size="11" fill="#9CA3AF">&#8364;1M</text>
+          <text x="0" y="103" font-size="11" fill="#9CA3AF">&#8364;2M</text>
+          <text x="0" y="63" font-size="11" fill="#9CA3AF">&#8364;3M</text>
+          <text x="0" y="23" font-size="11" fill="#9CA3AF">&#8364;5M</text>
+          <line x1="20" y1="20" x2="1220" y2="20" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="6 3"/>
+          <text x="1160" y="16" font-size="11" fill="#EF4444" font-weight="600">Ceiling</text>
+          <defs>
+            <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3B6FE8" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#3B6FE8" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <path d="M20,160 L134,152 L248,145 L362,140 L476,133 L590,125 L704,117 L818,109 L818,180 L704,180 L590,180 L476,180 L362,180 L248,180 L134,180 L20,180 Z" fill="url(#blueGrad)"/>
+          <polyline points="20,160 134,152 248,145 362,140 476,133 590,125 704,117 818,109" fill="none" stroke="#3B6FE8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <polyline points="818,109 932,98 1046,85 1160,70 1220,60" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5 3" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="20" cy="160" r="4" fill="#3B6FE8"/>
+          <circle cx="134" cy="152" r="4" fill="#3B6FE8"/>
+          <circle cx="248" cy="145" r="4" fill="#3B6FE8"/>
+          <circle cx="362" cy="140" r="4" fill="#3B6FE8"/>
+          <circle cx="476" cy="133" r="4" fill="#3B6FE8"/>
+          <circle cx="590" cy="125" r="4" fill="#3B6FE8"/>
+          <circle cx="704" cy="117" r="4" fill="#3B6FE8"/>
+          <circle cx="818" cy="109" r="5" fill="#3B6FE8" stroke="#fff" stroke-width="2"/>
+          <line x1="818" y1="20" x2="818" y2="180" stroke="#3B6FE8" stroke-width="1" stroke-dasharray="3 2" opacity="0.4"/>
+          <text x="822" y="35" font-size="11" fill="#3B6FE8">Now</text>
+        </svg>
+        <div class="chart-labels">
+          <span class="chart-label">Jul</span><span class="chart-label">Aug</span><span class="chart-label">Sep</span>
+          <span class="chart-label">Oct</span><span class="chart-label">Nov</span><span class="chart-label">Dec</span>
+          <span class="chart-label">Jan</span><span class="chart-label">Feb</span><span class="chart-label">Mar</span>
+          <span class="chart-label">Apr</span><span class="chart-label">May</span><span class="chart-label">Jun</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-row">
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">Recent Data Errors</div>
+          <a class="action-link">View all &#8594;</a>
+        </div>
+        <div class="error-row"><div class="error-meta"><div class="error-title">Missing insurer field</div><div class="error-desc">Contract #CR-4421 &middot; Municipality Noord</div></div><span class="severity-pill sev-high">High</span></div>
+        <div class="error-row"><div class="error-meta"><div class="error-title">Ceiling mismatch</div><div class="error-desc">Contract #CR-4389 &middot; Insurer Zilveren Zorg</div></div><span class="severity-pill sev-high">High</span></div>
+        <div class="error-row"><div class="error-meta"><div class="error-title">Duplicate record</div><div class="error-desc">Contract #CR-4401 &middot; Municipality West</div></div><span class="severity-pill sev-med">Medium</span></div>
+        <div class="error-row"><div class="error-meta"><div class="error-title">Invalid category code</div><div class="error-desc">Contract #CR-4355 &middot; Insurer CZ Groep</div></div><span class="severity-pill sev-med">Medium</span></div>
+      </div>
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">Top Spending Categories</div>
+          <a class="action-link">Details &#8594;</a>
+        </div>
+        <div class="trend-row"><span class="trend-label">Residential Care</span><div style="display:flex;align-items:center;gap:12px"><div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-blue" style="width:72%"></div></div><span class="trend-val">&#8364; 1,418,000</span></div></div>
+        <div class="trend-row"><span class="trend-label">Day Support</span><div style="display:flex;align-items:center;gap:12px"><div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-blue" style="width:54%"></div></div><span class="trend-val">&#8364; 1,063,000</span></div></div>
+        <div class="trend-row"><span class="trend-label">Home Assistance</span><div style="display:flex;align-items:center;gap:12px"><div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-blue" style="width:38%"></div></div><span class="trend-val">&#8364; 748,000</span></div></div>
+        <div class="trend-row"><span class="trend-label">Mental Health</span><div style="display:flex;align-items:center;gap:12px"><div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-amber" style="width:34%"></div></div><span class="trend-val">&#8364; 671,000</span></div></div>
+        <div class="trend-row"><span class="trend-label">Youth Services</span><div style="display:flex;align-items:center;gap:12px"><div class="progress-bar" style="width:140px;background:#F3F4F6"><div class="progress-fill fill-blue" style="width:10%"></div></div><span class="trend-val">&#8364; 200,000</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2 — FILTER OPEN -->
+<div class="screen" id="screen-filter">
+  <nav class="topnav">
+    <div class="brand">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link active">Overview</a>
+      <a class="nav-link">Contracts</a>
+      <a class="nav-link">Validation</a>
+      <a class="nav-link">Reports</a>
+    </div>
+    <div class="nav-right"><div class="avatar">MV</div><span class="nav-username">Mila van der Berg</span></div>
+  </nav>
+  <div class="page-header">
+    <div>
+      <div class="page-title">Overview</div>
+      <div class="page-sub">Last updated: Today at 09:41 — Fiscal year 2024-2025</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-filters-active"><span class="btn-icon">&#9881;</span> Filters Active</button>
+      <button class="btn btn-primary"><span class="btn-icon">&#8595;</span> Export Report</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="filter-panel">
+      <div class="filter-panel-header">
+        <div class="filter-panel-title">&#128269; Filter Dashboard</div>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:13px">&#10005; Close</button>
+      </div>
+      <div class="filter-grid">
+        <div class="filter-field"><label>Insurer</label><select class="filter-select active"><option>Zilveren Zorg</option></select></div>
+        <div class="filter-field"><label>Municipality</label><select class="filter-select active"><option>Noord</option></select></div>
+        <div class="filter-field"><label>Contract</label><select class="filter-select"><option>All contracts</option></select></div>
+        <div class="filter-field"><label>Date range</label><select class="filter-select active"><option>Q1 2025 (Jan-Mar)</option></select></div>
+      </div>
+      <div class="filter-chips">
+        <span class="chip">Insurer: Zilveren Zorg <span class="chip-x">&#215;</span></span>
+        <span class="chip">Municipality: Noord <span class="chip-x">&#215;</span></span>
+        <span class="chip">Period: Q1 2025 <span class="chip-x">&#215;</span></span>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-outline">Reset All</button>
+        <button class="btn btn-primary">Apply Filters</button>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Budget Used</div><div class="kpi-value">64.2%</div>
+        <div class="progress-bar"><div class="progress-fill fill-blue" style="width:64.2%"></div></div>
+        <div class="kpi-sub">&#8364; 963,000 of &#8364; 1,500,000</div>
+        <span class="kpi-badge badge-blue">Filtered: Zilveren Zorg &middot; Noord</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Days Until Predicted Breach</div><div class="kpi-value" style="color:#059669">87</div>
+        <div class="progress-bar"><div class="progress-fill fill-blue" style="width:70%"></div></div>
+        <div class="kpi-sub">Predicted breach: 12 Jun 2025</div>
+        <span class="kpi-badge badge-green">&#10003; Within safe range</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Data Errors</div><div class="kpi-value" style="color:#D97706">4</div>
+        <div class="kpi-sub">3 open &middot; 1 under review</div>
+        <span class="kpi-badge badge-amber">&#9888; Review needed</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Spending Trend</div><div class="kpi-value" style="color:#059669">+1.8%</div>
+        <div class="kpi-sub">Month-over-month increase</div>
+        <span class="kpi-badge badge-blue">&#8593; Within forecast range</span>
+      </div>
+    </div>
+    <div class="chart-section">
+      <div class="section-header">
+        <div class="section-title">Spending vs Budget Ceiling — Q1 2025 &middot; Zilveren Zorg &middot; Noord</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot dot-blue"></div> Actual</div>
+          <div class="legend-item"><div class="legend-dot dot-amber"></div> Forecast</div>
+          <div class="legend-item"><div class="legend-dot" style="width:24px;height:2px;border-radius:0;background:#EF4444"></div> Ceiling</div>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <svg width="100%" height="140" viewBox="0 0 1240 140" xmlns="http://www.w3.org/2000/svg">
+          <line x1="0" y1="120" x2="1240" y2="120" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="80" x2="1240" y2="80" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="40" x2="1240" y2="40" stroke="#F3F4F6" stroke-width="1"/>
+          <line x1="0" y1="15" x2="1240" y2="15" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="6 3"/>
+          <text x="1160" y="12" font-size="11" fill="#EF4444" font-weight="600">Ceiling</text>
+          <defs><linearGradient id="blueGrad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3B6FE8" stop-opacity="0.15"/><stop offset="100%" stop-color="#3B6FE8" stop-opacity="0.02"/></linearGradient></defs>
+          <path d="M20,115 L400,100 L800,85 L800,120 L400,120 L20,120 Z" fill="url(#blueGrad2)" opacity="0.5"/>
+          <polyline points="20,115 400,100 800,85" fill="none" stroke="#3B6FE8" stroke-width="2.5" stroke-linejoin="round"/>
+          <polyline points="800,85 1000,72 1200,62" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5 3"/>
+          <circle cx="20" cy="115" r="4" fill="#3B6FE8"/><circle cx="400" cy="100" r="4" fill="#3B6FE8"/><circle cx="800" cy="85" r="5" fill="#3B6FE8" stroke="#fff" stroke-width="2"/>
+        </svg>
+        <div class="chart-labels">
+          <span class="chart-label">Jan</span><span class="chart-label">Feb</span>
+          <span class="chart-label" style="color:#3B6FE8;font-weight:600">Mar (now)</span>
+          <span class="chart-label">Apr</span><span class="chart-label">May</span><span class="chart-label">Jun</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3 — ERROR DETAILS -->
+<div class="screen" id="screen-errors">
+  <nav class="topnav">
+    <div class="brand">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link">Overview</a>
+      <a class="nav-link">Contracts</a>
+      <a class="nav-link active">Validation</a>
+      <a class="nav-link">Reports</a>
+    </div>
+    <div class="nav-right"><div class="avatar">MV</div><span class="nav-username">Mila van der Berg</span></div>
+  </nav>
+  <div class="page-header">
+    <div>
+      <a class="back-link">&#8592; Overview</a>
+      <div class="breadcrumb"><a>Overview</a> / Data Errors</div>
+      <div class="page-title">Data Validation Issues</div>
+      <div class="page-sub">12 issues found — Fiscal year 2024-2025 &middot; All insurers &middot; All municipalities</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline"><span class="btn-icon">&#9881;</span> Filter Issues</button>
+      <button class="btn btn-primary">&#8595; Export Issue Log</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="summary-bar">
+      <div class="sum-item"><div class="sum-val val-red">8</div><div class="sum-label">Open</div></div>
+      <div class="sum-item"><div class="sum-val val-amber">4</div><div class="sum-label">Under Review</div></div>
+      <div class="sum-item"><div class="sum-val val-green">6</div><div class="sum-label">Resolved (30d)</div></div>
+      <div class="sum-item"><div class="sum-val" style="color:#374151">12</div><div class="sum-label">Total Active</div></div>
+    </div>
+    <div class="panel" style="padding:0">
+      <table class="error-table">
+        <thead><tr><th>Issue Type</th><th>Contract</th><th>Insurer</th><th>Municipality</th><th>Severity</th><th>Status</th><th>Detected</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Missing field</strong><br><span style="font-size:12px;color:#9CA3AF">Insurer ID not set</span></td><td>CR-4421</td><td>—</td><td>Noord</td><td><span class="severity-pill sev-high">High</span></td><td><span class="status-badge status-open">&#9679; Open</span></td><td>15 Mar</td><td><a class="action-link">Review &#8594;</a></td></tr>
+          <tr><td><strong>Ceiling mismatch</strong><br><span style="font-size:12px;color:#9CA3AF">Contract ceiling differs from system</span></td><td>CR-4389</td><td>Zilveren Zorg</td><td>West</td><td><span class="severity-pill sev-high">High</span></td><td><span class="status-badge status-open">&#9679; Open</span></td><td>14 Mar</td><td><a class="action-link">Review &#8594;</a></td></tr>
+          <tr><td><strong>Duplicate record</strong><br><span style="font-size:12px;color:#9CA3AF">Duplicate claim detected</span></td><td>CR-4401</td><td>CZ Groep</td><td>West</td><td><span class="severity-pill sev-med">Medium</span></td><td><span class="status-badge status-review">&#9684; Review</span></td><td>13 Mar</td><td><a class="action-link">Review &#8594;</a></td></tr>
+          <tr><td><strong>Invalid category</strong><br><span style="font-size:12px;color:#9CA3AF">Unknown care category code</span></td><td>CR-4355</td><td>CZ Groep</td><td>Zuid</td><td><span class="severity-pill sev-med">Medium</span></td><td><span class="status-badge status-open">&#9679; Open</span></td><td>12 Mar</td><td><a class="action-link">Review &#8594;</a></td></tr>
+          <tr><td><strong>Missing field</strong><br><span style="font-size:12px;color:#9CA3AF">Municipality code blank</span></td><td>CR-4290</td><td>VGZ</td><td>—</td><td><span class="severity-pill sev-high">High</span></td><td><span class="status-badge status-open">&#9679; Open</span></td><td>11 Mar</td><td><a class="action-link">Review &#8594;</a></td></tr>
+          <tr><td><strong>Ceiling mismatch</strong><br><span style="font-size:12px;color:#9CA3AF">Budget ceiling below actual spend</span></td><td>CR-4271</td><td>Zilveren Zorg</td><td>Noord</td><td><span class="severity-pill sev-high">High</span></td><td><span class="status-badge status-review">&#9684; Review</span></td><td>10 Mar</td><td><a class="action-link">Review &#8594;</a></td></tr>
+          <tr><td><strong>Duplicate record</strong><br><span style="font-size:12px;color:#9CA3AF">Same provider billed twice</span></td><td>CR-4244</td><td>VGZ</td><td>Noord</td><td><span class="severity-pill sev-low">Low</span></td><td><span class="status-badge status-review">&#9684; Review</span></td><td>9 Mar</td><td><a class="action-link">Review &#8594;</a></td></tr>
+          <tr><td><strong>Invalid category</strong><br><span style="font-size:12px;color:#9CA3AF">Category not in master list</span></td><td>CR-4211</td><td>CZ Groep</td><td>Zuid</td><td><span class="severity-pill sev-low">Low</span></td><td><span class="status-badge status-open">&#9679; Open</span></td><td>8 Mar</td><td><a class="action-link">Review &#8594;</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4 — EXPORT MODAL -->
+<div class="screen" id="screen-export">
+  <nav class="topnav">
+    <div class="brand">Fund<span>Flow</span></div>
+    <div class="nav-links">
+      <a class="nav-link active">Overview</a>
+      <a class="nav-link">Contracts</a>
+      <a class="nav-link">Validation</a>
+      <a class="nav-link">Reports</a>
+    </div>
+    <div class="nav-right"><div class="avatar">MV</div><span class="nav-username">Mila van der Berg</span></div>
+  </nav>
+  <div class="page-header">
+    <div>
+      <div class="page-title">Overview</div>
+      <div class="page-sub">Last updated: Today at 09:41 — Fiscal year 2024-2025</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline"><span class="btn-icon">&#9881;</span> Filters</button>
+      <button class="btn btn-primary" style="background:#1C2A4A"><span class="btn-icon">&#8595;</span> Export Report</button>
+    </div>
+  </div>
+  <div class="content" style="opacity:0.15;pointer-events:none">
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Budget Used</div><div class="kpi-value">78.4%</div></div>
+      <div class="kpi-card"><div class="kpi-label">Days Until Breach</div><div class="kpi-value" style="color:#D97706">34</div></div>
+      <div class="kpi-card"><div class="kpi-label">Data Errors</div><div class="kpi-value" style="color:#DC2626">12</div></div>
+      <div class="kpi-card"><div class="kpi-label">Spending Trend</div><div class="kpi-value" style="color:#059669">+3.1%</div></div>
+    </div>
+  </div>
+  <div class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Export Report</div>
+        <span class="modal-close">&#10005;</span>
+      </div>
+      <div class="modal-body">
+        <span class="modal-label">Export Format</span>
+        <div class="format-options">
+          <div class="format-card selected"><div class="format-icon">&#128196;</div><div class="format-name">PDF</div><div class="format-desc">Formatted report</div></div>
+          <div class="format-card"><div class="format-icon">&#128202;</div><div class="format-name">Excel (.xlsx)</div><div class="format-desc">Raw data table</div></div>
+          <div class="format-card"><div class="format-icon">&#128203;</div><div class="format-name">CSV</div><div class="format-desc">Plain data export</div></div>
+        </div>
+        <span class="modal-label">Report Scope</span>
+        <div class="scope-options">
+          <label class="scope-option selected"><input type="radio" name="scope" checked><div><div style="font-weight:600">Full dashboard — Fiscal year 2024-2025</div><div style="font-size:12px;color:#9CA3AF">All insurers &middot; All municipalities &middot; All contracts</div></div></label>
+          <label class="scope-option"><input type="radio" name="scope"><div><div style="font-weight:600">Current filtered view</div><div style="font-size:12px;color:#9CA3AF">No active filters — same as full report</div></div></label>
+          <label class="scope-option"><input type="radio" name="scope"><div><div style="font-weight:600">Error log only</div><div style="font-size:12px;color:#9CA3AF">12 active validation issues</div></div></label>
+        </div>
+        <div style="background:#F9FAFB;border-radius:7px;padding:12px 14px;border:1px solid #E5E7EB">
+          <div class="info-row"><strong>Period:</strong> Jul 2024 — Mar 2025</div>
+          <div class="info-row"><strong>Format:</strong> PDF</div>
+          <div class="info-row"><strong>Includes:</strong> Budget overview, spending chart, error summary</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline">Cancel</button>
+        <button class="btn btn-primary">&#8595; Generate &amp; Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Use query param ?screen= to select which screen to show (for Figma capture)
+  // No hash manipulation - keeps Figma capture hash intact
+  var params = new URLSearchParams(window.location.search);
+  var screen = params.get('screen') || 'overview';
+  var labels = {
+    overview: 'Screen 1 — Overview',
+    filter: 'Screen 2 — Filter Open',
+    errors: 'Screen 3 — Error Details',
+    export: 'Screen 4 — Export Modal'
+  };
+  var el = document.getElementById('screen-' + screen);
+  if (el) {
+    el.classList.add('active');
+    document.getElementById('screenLabel').textContent = labels[screen] || '';
+  }
+</script>
+</body>
+</html>
