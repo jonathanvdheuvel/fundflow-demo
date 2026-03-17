@@ -37,6 +37,20 @@ If a version number is shown, you can use the Python server option below.
 
 ## How to run the prototype
 
+## GitHub Pages (shareable for the coming month)
+
+Live URL:
+
+```text
+https://jonathanvdheuvel.github.io/fundflow-demo/fundflow.html
+```
+
+How updates go live:
+
+1. Commit your changes to `main`.
+2. Push to GitHub.
+3. GitHub Pages publishes from the repository root automatically.
+
 ### Option A — Python server (recommended)
 
 1. Open Terminal / Command Prompt
